@@ -242,26 +242,34 @@ def fetch_data_view(request, country, data_type):
     if season: kwargs['season'] = season
     if url: kwargs['url'] = url
 
-    if data_type == 'standings':
-        data = fetch_standings(country, **kwargs)
-    elif data_type == 'fixtures':
-        data = fetch_fixtures(country, **kwargs)
-    elif data_type == 'squads':
-        data = fetch_squads(country, **kwargs)
-    else:
-        messages.error(request, f"Bilinmeyen veri tipi: {data_type}")
-        return redirect('automation_dashboard')
+    try:
+        if data_type == 'standings':
+            data = fetch_standings(country, **kwargs)
+        elif data_type == 'fixtures':
+            data = fetch_fixtures(country, **kwargs)
+        elif data_type == 'squads':
+            data = fetch_squads(country, **kwargs)
+        else:
+            messages.error(request, f"Bilinmeyen veri tipi: {data_type}")
+            return redirect('automation_dashboard')
+            
+        if not data:
+            messages.error(request, f"{country.title()} {data_type} verisi çekilemedi veya boş döndü.")
+            return redirect('automation_dashboard')
+            
+        # Stage data in Session
+        request.session['staged_data'] = data
+        request.session['staged_country'] = country
+        request.session['staged_type'] = data_type
         
-    if not data:
-        messages.error(request, f"{country.title()} {data_type} verisi çekilemedi veya boş döndü.")
+        return redirect('data_preview_view')
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"CRITICAL VIEW ERROR: {e}")
+        messages.error(request, f"Sistem Hatası: {str(e)}")
         return redirect('automation_dashboard')
-        
-    # Stage data in Session
-    request.session['staged_data'] = data
-    request.session['staged_country'] = country
-    request.session['staged_type'] = data_type
-    
-    return redirect('data_preview_view')
 
 def data_preview_view(request):
     """
