@@ -29,9 +29,14 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-r1f*s307#u9owoavla&l_cn)7h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,wfm-pro.com,www.wfm-pro.com,*').split(',')
+ALLOWED_HOSTS = ['*']
 
-CSRF_TRUSTED_ORIGINS = ['https://wfm-pro.com', 'https://www.wfm-pro.com']
+CSRF_TRUSTED_ORIGINS = [
+    'https://wfm-pro.com', 
+    'https://www.wfm-pro.com',
+    'http://wfm-pro.com',
+    'http://www.wfm-pro.com'
+]
 
 # Application definition
 
