@@ -30,4 +30,4 @@ COPY ./scripts/entrypoint.sh /app/scripts/entrypoint.sh
 RUN chmod +x /app/scripts/entrypoint.sh
 
 # Entrypoint
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+ENTRYPOINT ["sh", "/app/scripts/entrypoint.sh"]
