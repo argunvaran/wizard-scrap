@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary"><i class="fas fa-robot me-2"></i>Otomasyon ve Veri Merkezi</h2>
+        <div>
+            <a href="{% url 'workflow_list' %}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-project-diagram me-1"></i> Akışları Yönet
+            </a>
+            <a href="{% url 'task_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-tasks me-1"></i> Tüm Görevler
+            </a>
+            <button class="btn btn-primary ms-2" disabled>
+                <i class="fas fa-cloud-upload-alt me-1"></i> Veri Aktar
+            </button>
+            <a href="{% url 'sync_tasks' %}" class="btn btn-sm btn-outline-warning ms-2"
+                onclick="return confirm('Tüm görev tanımları sıfırlanıp tekrar yüklenecek. Onaylıyor musunuz?')">
+                <i class="fas fa-sync me-1"></i> Reset Tasks
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Workflows Summary -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm border-left-primary">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">Aktif Otomasyon Akışları</h5>
+                </div>
+                <div class="card-body">
+                    {% if workflows %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Akış Adı</th>
+                                    <th>Periyot</th>
+                                    <th>Son Çalışma</th>
+                                    <th>Sonraki Çalışma</th>
+                                    <th>Durum</th>
+                                    <th>İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for wf in workflows %}
+                                <tr>
+                                    <td><a href="{% url 'workflow_detail' wf.pk %}"
+                                            class="fw-bold text-decoration-none">{{ wf.name }}</a></td>
+                                    <td><span class="badge bg-secondary">{{ wf.interval_minutes }} dk</span></td>
+                                    <td>{{ wf.last_run|default:"-" }}</td>
+                                    <td>{{ wf.next_run|default:"-" }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Aktif</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'workflow_run' wf.pk %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">Aktif bir otomasyon akışı yok.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .border-turkey {
+            border-left: 5px solid #E30A17 !important;
+        }
+
+        .border-england {
+            border-left: 5px solid #38003c !important;
+        }
+
+        .border-spain {
+            border-left: 5px solid #FFC107 !important;
+        }
+
+        .border-italy {
+            border-left: 5px solid #0071BC !important;
+        }
+
+        .text-turkey {
+            color: #E30A17 !important;
+        }
+
+        .text-england {
+            color: #38003c !important;
+        }
+
+        .text-spain {
+            color: #FFC107 !important;
+        }
+
+        .text-italy {
+            color: #0071BC !important;
+        }
+    </style>
+
+    <!-- Shortcuts Section -->
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="m-0 text-primary">Hızlı İşlemler (Scraper Tetikleyiciler)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <!-- Puan Durumları -->
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0"><i class="fas fa-trophy text-secondary me-2"></i> Puan Durumu Çek</h6>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'fetch_data_view' 'turkey' 'standings' %}"
+                                    class="btn btn-outline-danger w-100 rounded-0"
+                                    onclick="return confirm('TR Puan Durumu Önizleme İçin Çekilsin mi?')">🇹🇷 TR</a>
+                                <a href="{% url 'fetch_data_view' 'england' 'standings' %}"
+                                    class="btn btn-outline-dark w-100 rounded-0"
+                                    onclick="return confirm('UK Puan Durumu Önizleme İçin Çekilsin mi?')">🇬🇧 UK</a>
+                                <a href="{% url 'fetch_data_view' 'spain' 'standings' %}"
+                                    class="btn btn-outline-warning w-100 rounded-0"
+                                    onclick="return confirm('ES Puan Durumu Önizleme İçin Çekilsin mi?')">🇪🇸 ES</a>
+                                <a href="{% url 'fetch_data_view' 'italy' 'standings' %}"
+                                    class="btn btn-outline-primary w-100 rounded-0"
+                                    onclick="return confirm('IT Puan Durumu Önizleme İçin Çekilsin mi?')">🇮🇹 IT</a>
+                            </div>
+                        </div>
+
+                        <!-- Fikstürler -->
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0"><i class="fas fa-calendar-alt text-secondary me-2"></i> Fikstür Çek
+                                </h6>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'fetch_data_view' 'turkey' 'fixtures' %}"
+                                    class="btn btn-outline-danger w-100 rounded-0"
+                                    onclick="return confirm('TR Fikstür Önizleme İçin Çekilsin mi?')">🇹🇷 TR</a>
+                                <a href="{% url 'fetch_data_view' 'england' 'fixtures' %}"
+                                    class="btn btn-outline-dark w-100 rounded-0"
+                                    onclick="return confirm('UK Fikstür Önizleme İçin Çekilsin mi?')">🇬🇧 UK</a>
+                                <a href="{% url 'fetch_data_view' 'spain' 'fixtures' %}"
+                                    class="btn btn-outline-warning w-100 rounded-0"
+                                    onclick="return confirm('ES Fikstür Önizleme İçin Çekilsin mi?')">🇪🇸 ES</a>
+                                <a href="{% url 'fetch_data_view' 'italy' 'fixtures' %}"
+                                    class="btn btn-outline-primary w-100 rounded-0"
+                                    onclick="return confirm('IT Fikstür Önizleme İçin Çekilsin mi?')">🇮🇹 IT</a>
+                            </div>
+                        </div>
+
+                        <!-- Kadrolar -->
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0"><i class="fas fa-users text-secondary me-2"></i> Kadroları Çek (Uzun
+                                    Sürer)</h6>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'fetch_data_view' 'turkey' 'squads' %}"
+                                    class="btn btn-outline-danger w-100 rounded-0"
+                                    onclick="return confirm('TR Kadrolar Önizleme İçin Çekilsin mi?')">🇹🇷 TR</a>
+                                <a href="{% url 'fetch_data_view' 'england' 'squads' %}"
+                                    class="btn btn-outline-dark w-100 rounded-0"
+                                    onclick="return confirm('UK Kadrolar Önizleme İçin Çekilsin mi?')">🇬🇧 UK</a>
+                                <a href="{% url 'fetch_data_view' 'spain' 'squads' %}"
+                                    class="btn btn-outline-warning w-100 rounded-0"
+                                    onclick="return confirm('ES Kadrolar Önizleme İçin Çekilsin mi?')">🇪🇸 ES</a>
+                                <a href="{% url 'fetch_data_view' 'italy' 'squads' %}"
+                                    class="btn btn-outline-primary w-100 rounded-0"
+                                    onclick="return confirm('IT Kadrolar Önizleme İçin Çekilsin mi?')">🇮🇹 IT</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info / Stats Placeholder -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 bg-light">
+                <div class="card-body d-flex align-items-center justify-content-center text-center">
+                    <p class="text-muted">
+                        <i class="fas fa-server fa-2x mb-2"></i><br>
+                        <strong>Web Veri Motoru</strong><br>
+                        <small>
+                            Bu panel, Scraper fonksiyonlarını doğrudan Web Uygulaması içinde çalıştırır.<br>
+                            Çekilen veriler önce <strong>Önizleme Tablosuna</strong> gelir, onaylarsanız kaydedilir.
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Country Detail Cards -->
+    <div class="row mb-4">
+        {% for country, tasks in data_tasks.items %}
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div
+                class="card shadow h-100 py-2 
+                {% if country == 'Turkey' %}border-turkey{% elif country == 'England' %}border-england{% elif country == 'Spain' %}border-spain{% elif country == 'Italy' %}border-italy{% endif %}">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center mb-3">
+                        <div class="col mr-2">
+                            <div
+                                class="text-xs font-weight-bold text-uppercase mb-1 
+                                {% if country == 'Turkey' %}text-turkey{% elif country == 'England' %}text-england{% elif country == 'Spain' %}text-spain{% elif country == 'Italy' %}text-italy{% endif %}">
+                                {{ country }}
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">LİG PANELİ</div>
+                        </div>
+                        <div class="col-auto">
+                            {% if country == 'Turkey' %}<i class="fas fa-flag text-danger fa-2x"></i>
+                            {% elif country == 'England' %}<i class="fas fa-crown text-dark fa-2x"></i>
+                            {% elif country == 'Spain' %}<i class="fas fa-sun text-warning fa-2x"></i>
+                            {% elif country == 'Italy' %}<i class="fas fa-pizza-slice text-primary fa-2x"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'fetch_data_view' country 'standings' %}"
+                            class="btn btn-sm btn-outline-secondary w-100 text-start">
+                            <i class="fas fa-table me-2"></i> Puan Durumu Çek
+                        </a>
+
+                        <a href="{% url 'fetch_data_view' country 'fixtures' %}"
+                            class="btn btn-sm btn-outline-secondary w-100 text-start">
+                            <i class="fas fa-calendar-alt me-2"></i> Fikstür Çek
+                        </a>
+
+                        <a href="{% url 'fetch_data_view' country 'squads' %}"
+                            class="btn btn-sm btn-outline-secondary w-100 text-start">
+                            <i class="fas fa-users me-2"></i> Kadro Çek
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Recent Logs -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Son İşlem Kayıtları (Logs)</h5>
+                    <a href="{% url 'task_log_list' %}" class="btn btn-sm btn-link">Tümünü Gör</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Zaman</th>
+                                    <th>Görev</th>
+                                    <th>Durum</th>
+                                    <th>Süre</th>
+                                    <th>Çıktı Özeti</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in recent_logs %}
+                                <tr>
+                                    <td><small>{{ log.created_at|date:"Y-m-d H:i:s" }}</small></td>
+                                    <td>{{ log.task_name }}</td>
+                                    <td>
+                                        {% if log.status == 'SUCCESS' %}
+                                        <span class="badge bg-success">Başarılı</span>
+                                        {% elif log.status == 'FAILED' %}
+                                        <span class="badge bg-danger">Hata</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">{{ log.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.duration_seconds|floatformat:2 }}s</td>
+                                    <td><small class="text-muted">{{ log.output|truncatechars:50 }}</small></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3">Henüz log kaydı yok.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

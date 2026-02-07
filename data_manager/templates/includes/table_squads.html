@@ -1,0 +1,35 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-hover table-sm" id="dataTable" width="100%" cellspacing="0">
+        <thead class="table-dark">
+            <tr>
+                <th>Team</th>
+                <th>#</th>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>Age</th>
+                <th>Start</th>
+                <th>G</th>
+                <th>A</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in data %}
+            <tr>
+                <td><span class="badge bg-secondary">{{ player.team_name }}</span></td>
+                <td>{{ player.jersey_number }}</td>
+                <td class="fw-bold">{{ player.player_name }}</td>
+                <td>{{ player.position }}</td>
+                <td>{{ player.age }}</td>
+                <td>{{ player.starts }}</td>
+                <td class="text-primary fw-bold">{{ player.goals }}</td>
+                <td class="text-success fw-bold">{{ player.assists }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-4">No data available.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="mt-2 text-muted small">Showing max 100 rows.</div>
+</div>

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Canlı Veri Çek (Web Scraper){% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-secondary mb-3"><i class="bi bi-robot"></i> Canlı Veri Çekme Merkezi</h2>
+        <p class="text-muted">Bu panel üzerinden sunucu tabanlı scraper'ı tetikleyerek İddaa bültenini
+            güncelleyebilirsiniz.</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <!-- Bilyoner / Bulletin Scraper Card -->
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-wallet2"></i> Bilyoner Bülteni</h5>
+            </div>
+            <div class="card-body text-center p-5">
+                <p class="lead mb-4">
+                    Güncel İddaa oranlarını, takım eşleşmelerini ve bülteni Bilyoner üzerinden canlı çeker.
+                </p>
+                <p class="text-muted mb-4 small">
+                    <i class="bi bi-info-circle"></i> İşlem süresi internet hızına bağlı olarak 1-2 dakika sürebilir.
+                    Lütfen işlem bitene kadar bekleyiniz.
+                </p>
+
+                <form action="{% url 'run_web_scraper' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow hover-scale">
+                        <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"
+                            id="loadingSpinner"></span>
+                        <i class="bi bi-play-circle-fill"></i> BÜLTENİ GÜNCELLE
+                    </button>
+                </form>
+            </div>
+            <div class="card-footer bg-light">
+                <small class="text-muted">Son işlem: Anlık veritabanına kaydedilir.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function () {
+        var btn = this.querySelector('button');
+        var spinner = document.getElementById('loadingSpinner');
+        btn.classList.add('disabled');
+        btn.innerHTML = 'İşlem Sürüyor...';
+        btn.prepend(spinner);
+        spinner.classList.remove('d-none');
+    });
+</script>
+
+<style>
+    .hover-scale {
+        transition: transform 0.2s;
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

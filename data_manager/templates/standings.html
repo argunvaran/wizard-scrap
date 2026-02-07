@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Puan Durumu{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-end">
+                <!-- Filter Form (Left) -->
+                <form method="get" class="d-flex align-items-end gap-3">
+                    <div>
+                        <label class="form-label fw-bold text-secondary small">FİLTRELE</label>
+                        <select name="country" class="form-select" onchange="this.form.submit()">
+                            {% for value, label in form.fields.country.choices %}
+                            <option value="{{ value }}" {% if value == selected_country %}selected{% endif %}>{{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+
+                <!-- Action Button (Right) -->
+                <div class="d-flex align-items-end gap-2">
+                    <div class="text-end">
+                        <label class="form-label fw-bold text-primary small">VERİ GÜNCELLEME</label>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="fetchMenu"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-cloud-download-alt me-1"></i> Verileri Çek
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="fetchMenu">
+                                <li>
+                                    <h6 class="dropdown-header">Ülke Seçin</h6>
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'turkey' 'standings' %}"
+                                        onclick="return confirm('Türkiye Puan Durumu çekilsin mi?')">🇹🇷 Türkiye</a>
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'england' 'standings' %}"
+                                        onclick="return confirm('İngiltere Puan Durumu çekilsin mi?')">🇬🇧
+                                        İngiltere</a></li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'spain' 'standings' %}"
+                                        onclick="return confirm('İspanya Puan Durumu çekilsin mi?')">🇪🇸 İspanya</a>
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'italy' 'standings' %}"
+                                        onclick="return confirm('İtalya Puan Durumu çekilsin mi?')">🇮🇹 İtalya</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h4 class="mb-0">Puan Durumu</h4>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ülke</th>
+                        <th>Sıra</th>
+                        <th>Takım</th>
+                        <th>O</th>
+                        <th>G</th>
+                        <th>B</th>
+                        <th>M</th>
+                        <th>A</th>
+                        <th>Y</th>
+                        <th>AV</th>
+                        <th>P</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            {% if item.country == 'TURKEY' %}<span class="badge bg-danger">TR</span>
+                            {% elif item.country == 'ENGLAND' %}<span class="badge bg-primary">EN</span>
+                            {% elif item.country == 'SPAIN' %}<span class="badge bg-warning text-dark">ES</span>
+                            {% elif item.country == 'ITALY' %}<span class="badge bg-success">IT</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ item.rank }}</td>
+                        <td>{{ item.team }}</td>
+                        <td>{{ item.played }}</td>
+                        <td>{{ item.won }}</td>
+                        <td>{{ item.drawn }}</td>
+                        <td>{{ item.lost }}</td>
+                        <td>{{ item.goals_for }}</td>
+                        <td>{{ item.goals_against }}</td>
+                        <td>{{ item.average }}</td>
+                        <td class="fw-bold text-primary">{{ item.points }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4 text-muted">Veri bulunamadı. Lütfen "İçe Aktar"
+                            menüsünden veri senkronize edin.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

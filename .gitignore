@@ -1,0 +1,29 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+.env.prod
+.env*
+.DS_Store
+
+# Local Database
+db.sqlite3
+
+# Static and Media
+static/
+media/
+
+# Virtual Environment
+venv/
+env/
+.venv/
+Scripts/
+
+# Playwright
+test-results/
+playwright-report/
+
+# Logs
+*.log

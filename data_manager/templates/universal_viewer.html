@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Generic Table Viewer - LeagueSys{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Universal Data Viewer</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <form method="get" class="card p-3 bg-light shadow-sm">
+            <label class="form-label fw-bold">Select a Database Table to Inspect:</label>
+            <div class="input-group">
+                <select name="table_name" class="form-select">
+                    <option value="" disabled selected>-- Choose a Table --</option>
+                    {% for tbl in all_tables %}
+                    <option value="{{ tbl }}" {% if selected_table == tbl %}selected{% endif %}>{{ tbl }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Load Data
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_table %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center bg-white">
+        <h6 class="m-0 font-weight-bold text-primary">Table: <span class="text-dark">{{ selected_table }}</span></h6>
+        <span class="badge bg-secondary">{{ rows|length }} Records</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
+            <table class="table table-bordered table-striped table-hover table-sm" style="font-size: 0.9rem;">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        {% for col in columns %}
+                        <th class="text-nowrap">{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{{ columns|length }}" class="text-center py-5 text-muted">No data found in this
+                            table.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% elif all_tables %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-database display-1"></i>
+    <p class="mt-3 lead">Please select a table above to view its raw contents.</p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Kupon Oluşturucu</h4>
+            </div>
+            <div class="card-body">
+                <p>En yüksek ihtimalli 10 maçı derinlemesine analiz edip, her biri için Tek Maçlık 10 ayrı kupon
+                    oluşturur.</p>
+
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="generate">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Her Kupon İçin Yatırılacak Tutar (TL)</label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount" value="50"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 mb-3">
+                        <i class="fas fa-magic me-2"></i>10 Adet Özel Kupon Oluştur
+                    </button>
+                    <a href="{% url 'coupon_portfolio' %}" class="btn btn-outline-secondary w-100">
+                        Portföye Git
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card shadow border-warning">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="fas fa-crown me-2"></i>Özel Hedef Kuponları
+            </div>
+            <div class="card-body text-center">
+                <p>50 TL sabit yatırımla hedeflediğin kazanca ulaşmak için en güvenilir maçları kombinleyelim.</p>
+                <form method="POST" class="d-flex justify-content-center gap-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="special_targets">
+
+                    <button type="submit" class="btn btn-outline-dark px-4 py-3 position-relative">
+                        <span class="d-block small text-muted">Hedef</span>
+                        <span class="fs-4 fw-bold">100 TL</span>
+                        <span
+                            class="badge bg-success position-absolute top-0 start-100 translate-middle rounded-pill">x2</span>
+                    </button>
+
+                    <button type="submit" class="btn btn-outline-dark px-4 py-3 position-relative">
+                        <span class="d-block small text-muted">Hedef</span>
+                        <span class="fs-4 fw-bold">500 TL</span>
+                        <span
+                            class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill">x10</span>
+                    </button>
+
+                    <button type="submit" class="btn btn-outline-dark px-4 py-3 position-relative">
+                        <span class="d-block small text-muted">Hedef</span>
+                        <span class="fs-4 fw-bold">1.000 TL</span>
+                        <span
+                            class="badge bg-dark position-absolute top-0 start-100 translate-middle rounded-pill">x20</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    </form>
+</div>
+</div>
+</div>
+
+<div class="col-md-8 mt-4">
+    <div class="card shadow border-info">
+        <div class="card-header bg-info text-white fw-bold">
+            <i class="fas fa-shield-alt me-2"></i>3+1 Garantili Üçlü Sistem
+        </div>
+        <div class="card-body text-center">
+            <p>3 Seçkin Maç. 3 Tekli + 1 Kombine ile maksimum güvenlik ve kazanç.</p>
+
+            <form method="POST" class="row g-3 justify-content-center align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="strategic_hedge">
+                <div class="col-auto">
+                    <label class="form-label small fw-bold">Toplam Bütçe (TL)</label>
+                    <input type="number" name="amount" value="400" class="form-control" style="width: 100px;">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-info px-4">
+                        <i class="fas fa-layer-group me-2"></i>Sistemi Oluştur & Analiz Et
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="col-md-8 mt-4">
+    <div class="card shadow border-danger">
+        <div class="card-header bg-danger text-white fw-bold bg-gradient">
+            <i class="fas fa-fire me-2"></i>Efsane Kupon (100 Oran Hedefi) 🚀
+        </div>
+        <div class="card-body text-center">
+            <p>Maç Sonucu, Alt/Üst karma! En yüksek değerli (Value) maçları birleştirerek ~100 oranlı tek kupon çıkarır.
+            </p>
+
+            <form method="POST" class="row g-3 justify-content-center align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="generate_legendary">
+                <div class="col-auto">
+                    <label class="form-label small fw-bold">Yatırım (TL)</label>
+                    <input type="number" name="amount" value="50" class="form-control" style="width: 100px;">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-danger px-4">
+                        <i class="fas fa-meteor me-2"></i>Efsane Kuponu Yarat!
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+
+{% if hedge_mode %}
+<div class="row mt-5">
+    <div class="col-12 mb-4">
+        <div class="alert alert-light border shadow-sm">
+            <h4 class="alert-heading text-info"><i class="fas fa-chess-board me-2"></i>Strateji Analizi</h4>
+            <p>{{ strategy_text|safe }}</p>
+            <hr>
+            <form method="POST" class="text-end">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="play_all">
+                <button type="submit" class="btn btn-info text-white shadow">
+                    <i class="fas fa-check-double me-2"></i>Bu Stratejiyi Uygula (Tümünü Oyna)
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        {% for coupon in coupons %}
+        <div class="col">
+            <div
+                class="card h-100 shadow {% if forloop.counter == 4 %}border-success{% else %}border-secondary{% endif %}">
+                <div
+                    class="card-header text-white fw-bold {% if forloop.counter == 4 %}bg-success{% else %}bg-secondary{% endif %}">
+                    {% if forloop.counter == 4 %}🚀 KOMBİNE (Bonus){% else %}1️⃣ TEKLİ #{{ forloop.counter }}{% endif %}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ coupon.amount }} TL</h5>
+                    <ul class="list-group list-group-flush mb-3 small">
+                        {% for item in coupon.items.all %}
+                        <li class="list-group-item bg-light p-1">
+                            <strong>{{ item.prediction }}</strong> ({{ item.odds }})<br>
+                            <span class="text-muted" style="font-size: 0.85em;">{{ item.home_team }} - {{ item.away_team
+                                }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="card-text border-top pt-2">
+                        Dönüş: <strong>{{ coupon.potential_return }} TL</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if coupons %}
+<div class="row mt-5">
+    <div class="col-12 text-center mb-4">
+        <h3><i class="fas fa-list-ol"></i> Önerilen Kuponlar</h3>
+        <p class="text-muted">Bu kuponları onaylıyorsan aşağıdaki butona basarak portföyüne ekle.</p>
+        <form method="POST" action="">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="play_all">
+            <button type="submit" class="btn btn-primary btn-lg px-5 shadow pulse-button">
+                <i class="fas fa-check-circle me-2"></i>TÜM KUPONLARI OYNA
+            </button>
+        </form>
+    </div>
+
+    {% for coupon in coupons %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border-primary shadow-sm">
+            <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-primary">Öneri #{{ forloop.counter }}</span>
+                <span class="badge bg-warning text-dark border border-dark">%{{ coupon.confidence|floatformat:1 }}
+                    İhtimal</span>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush small">
+                    {% for item in coupon.items.all %}
+                    <li class="list-group-item px-0 py-1 border-0">
+                        <div class="d-flex justify-content-between">
+                            <span>
+                                <i class="fas fa-futbol me-1 text-muted"></i>
+                                {{ item.home_team }} - {{ item.away_team }}
+                            </span>
+                            <span class="fw-bold">{{ item.prediction }} ({{ item.odds }})</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="mt-2 text-end pt-2 border-top">
+                    <small>Olası Kazanç: <strong class="text-success fs-5">{{ coupon.potential_return }}
+                            TL</strong></small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

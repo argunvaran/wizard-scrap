@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-primary mb-3">İddaa Bülteni (Bilyoner)</h2>
+        <div class="card p-3 shadow-sm">
+            <form method="get" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label for="id_country" class="col-form-label fw-bold">Ülke Filtrele:</label>
+                </div>
+                <div class="col-auto">
+                    {{ form.country }}
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Uygula</button>
+                    <a href="{% url 'bulletin' %}" class="btn btn-outline-secondary"> Sıfırla </a>
+                </div>
+                <div class="col-auto ms-auto">
+                    <span class="text-muted small">Son Güncelleme: Anlık</span>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if matches %}
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Ülke</th>
+                        <th scope="col">Lig</th>
+                        <th scope="col">Saat</th>
+                        <th scope="col">Ev Sahibi</th>
+                        <th scope="col">Deplasman</th>
+                        <th scope="col" class="text-center text-warning">MS 1</th>
+                        <th scope="col" class="text-center text-warning">MS X</th>
+                        <th scope="col" class="text-center text-warning">MS 2</th>
+                        <th scope="col" class="text-center text-info">2.5 Alt</th>
+                        <th scope="col" class="text-center text-info">2.5 Üst</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr>
+                        <td>
+                            {% if match.country == 'TURKEY' %} <span class="badge bg-danger">TR</span>
+                            {% elif match.country == 'ENGLAND' %} <span class="badge bg-primary">EN</span>
+                            {% elif match.country == 'SPAIN' %} <span class="badge bg-warning text-dark">ES</span>
+                            {% elif match.country == 'ITALY' %} <span class="badge bg-success">IT</span>
+                            {% elif match.country == 'GERMANY' %} <span class="badge bg-dark">DE</span>
+                            {% else %} <span class="badge bg-secondary">{{ match.country }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ match.league }}</td>
+                        <td class="fw-bold">{{ match.match_time }}</td>
+                        <td class="text-end pe-3 {% if match.ms_1 < match.ms_2 %}fw-bold{% endif %}">{{ match.home_team }}</td>
+                            
+                        <td class="text-start ps-3 {% if match.ms_2 < match.ms_1 %}fw-bold{% endif %}">{{ match.away_team }}</td>
+                            
+
+                        <!-- Odds -->
+                        <td class="text-center table-warning fw-bold">{{ match.ms_1 }}</td>
+                        <td class="text-center table-warning">{{ match.ms_x }}</td>
+                        <td class="text-center table-warning fw-bold">{{ match.ms_2 }}</td>
+
+                        <td class="text-center table-info">{{ match.under_2_5 }}</td>
+                        <td class="text-center table-info">{{ match.over_2_5 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning text-center">
+            Henüz bülten verisi bulunamadı veya filtreye uygun maç yok.
+            <br>
+            <small class="text-muted">Verileri çekmek için yönetici panelinden güncelleme yapınız.</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

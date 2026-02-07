@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - LeagueSys{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mt-5">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Create Account</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                        {% if field.help_text %}
+                        <div class="form-text text-muted mb-1">{{ field.help_text|safe }}</div>
+                        {% endif %}
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ field.errors|striptags }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success">Register</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">Already registered? <a href="{% url 'login' %}">Log in</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple script to add form-control class to all django inputs (since we're not using crispy-forms pkg)
+    document.querySelectorAll('input').forEach(input => {
+        if (input.type !== 'checkbox' && input.type !== 'radio') {
+            input.classList.add('form-control');
+        } else {
+            input.classList.add('form-check-input');
+        }
+    });
+</script>
+{% endblock %}

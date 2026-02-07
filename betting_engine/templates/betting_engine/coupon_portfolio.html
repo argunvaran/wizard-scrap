@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <!-- Header Stats -->
+    <!-- Header Stats (Bilyoner Focused) -->
+    <div class="card mb-4 bg-dark text-white shadow border-0" style="border-top: 4px solid #4e2a84 !important;">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3 border-end border-secondary">
+                    <h6 class="text-white-50 small text-uppercase">Bilyoner Yatırım</h6>
+                    <h2 class="fw-bold">{{ total_investment|floatformat:2 }} TL</h2>
+                    <small class="text-muted" style="font-size: 0.7rem;">(Sadece Onaylı)</small>
+                </div>
+                <div class="col-md-3 border-end border-secondary">
+                    <h6 class="text-white-50 small text-uppercase">Bilyoner Kazanç</h6>
+                    <h2 class="fw-bold text-success">{{ total_won|floatformat:2 }} TL</h2>
+                </div>
+                <div class="col-md-3 border-end border-secondary">
+                    <h6 class="text-white-50 small text-uppercase">Bekleyen (Bilyoner)</h6>
+                    <h2 class="fw-bold text-info">{{ total_potential|floatformat:2 }} TL</h2>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-white-50 small text-uppercase">Net Kâr (Gerçekleşen)</h6>
+                    <h2 class="fw-bold {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ net_profit|floatformat:2 }} TL
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-wallet me-2"></i>Oynanmış Kuponlar</h2>
+        <div>
+            <a href="{% url 'bilyoner_settings' %}" class="btn btn-outline-danger me-2">
+                <i class="fas fa-robot me-1"></i> Bilyoner Bot
+            </a>
+            <a href="{% url 'coupon_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Yeni Kupon Oluştur
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body py-2">
+            <div class="row align-items-end">
+                <div class="col-lg-8 mb-2 mb-lg-0">
+                    <form method="GET" class="row align-items-end">
+                        <div class="col-md-5 mb-2 mb-md-0">
+                            <label class="small text-muted fw-bold">Başlangıç Tarihi</label>
+                            <input type="date" name="start_date" class="form-control form-control-sm"
+                                value="{{ start_date|default:'' }}">
+                        </div>
+                        <div class="col-md-5 mb-2 mb-md-0">
+                            <label class="small text-muted fw-bold">Bitiş Tarihi</label>
+                            <input type="date" name="end_date" class="form-control form-control-sm"
+                                value="{{ end_date|default:'' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">
+                                <i class="fas fa-filter me-1"></i> Filtrele
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-lg-4 text-end">
+                    {% if coupons %}
+                    <form method="POST" onsubmit="return confirm('TÜM oynanmış kupon geçmişin silinecek. Emin misin?');"
+                        class="d-inline-block">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="clear_portfolio">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash-alt me-1"></i> Tüm Geçmişi Temizle
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% if start_date or end_date %}
+                    <a href="{% url 'coupon_portfolio' %}" class="btn btn-sm btn-link text-muted ms-2">Filtreyi
+                        Temizle</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if coupons %}
+    <div class="row">
+        {% for coupon in coupons %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div
+                    class="card-header d-flex justify-content-between align-items-center {% if coupon.status == 'WON' %}bg-success text-white{% elif coupon.status == 'LOST' %}bg-danger text-white{% else %}bg-white border-bottom{% endif %}">
+                    <div class="d-flex align-items-center">
+                        <span class="fw-bold">#{{ coupon.id }}</span>
+                        <!-- Display Confidence -->
+                        {% if coupon.confidence > 0 %}
+                        <span class="badge bg-warning text-dark ms-2">%{{ coupon.confidence|floatformat:1 }}</span>
+                        {% endif %}
+                        <!-- Bilyoner Execution Badge -->
+                        {% if coupon.execution_status == 'SUCCESS' %}
+                        <span class="badge ms-2 text-white" style="background-color: #4e2a84;">
+                            <i class="fas fa-check-circle me-1"></i>Bilyoner
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if coupon.status == 'PENDING' %}
+                    <span class="badge bg-secondary">BEKLİYOR</span>
+                    {% else %}
+                    <span class="fw-bold">{{ coupon.get_status_display }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    <!-- Money details -->
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                        <span>Yatırım: <strong>{{ coupon.amount }} TL</strong></span>
+                        <span>Olası Kazanç: <strong class="text-success">{{ coupon.potential_return }}
+                                TL</strong></span>
+                    </div>
+
+                    <ul class="list-group list-group-flush small">
+                        {% for item in coupon.items.all %}
+                        <li class="list-group-item px-0 py-1 border-0">
+                            <div class="d-flex justify-content-between">
+                                <span>
+                                    <span class="text-muted">{{ item.match_time }}</span>
+                                    {{ item.home_team }} - {{ item.away_team }}
+                                </span>
+                                <div>
+                                    <span class="badge bg-light text-dark border">{{ item.prediction }}</span>
+                                    <span class="fw-bold ms-1">{{ item.odds }}</span>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
+                    {% if coupon.status == 'PENDING' %}
+                    <a href="{% url 'play_coupon_on_bilyoner' coupon.id %}" class="btn btn-sm btn-danger">
+                        <i class="fas fa-robot me-1"></i> Bilyoner'de Oyna
+                    </a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+
+                    <div>
+                        <small class="text-muted me-2">{{ coupon.created_at|date:"d M H:i" }}</small>
+                        <a href="{% url 'coupon_detail' coupon.id %}"
+                            class="btn btn-sm btn-outline-secondary">Detaylar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center py-5">
+        <h4>Henüz oynanmış kuponun yok.</h4>
+        <p>Analiz motorunu kullanarak yüksek ihtimalli kuponlar oluştur ve portföyüne ekle.</p>
+        <a href="{% url 'coupon_create' %}" class="btn btn-primary mt-3"> Analiz Motorunu Başlat</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cogs me-2"></i>Otomasyon Görevleri</h2>
+        <div>
+            <a href="{% url 'sync_tasks' %}" class="btn btn-warning me-2"
+                onclick="return confirm('TÜM GÖREVLER SIFIRLANACAK! Onaylıyor musunuz?')">
+                <i class="fas fa-sync me-1"></i> Görevleri Sıfırla & Yükle
+            </a>
+            <a href="{% url 'task_list' %}" class="btn btn-info me-2 text-white"><i class="fas fa-tasks me-1"></i> Görev
+                listesi</a>
+            <a href="{% url 'task_log_list' %}" class="btn btn-secondary me-2"><i class="fas fa-list me-1"></i>
+                Loglar</a>
+            <a href="{% url 'workflow_create' %}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Yeni Akış</a>
+        </div>
+    </div>
+
+    <div class="table-responsive bg-white rounded shadow-sm">
+        <table class="table table-hover mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Akış Adı</th>
+                    <th>Açıklama</th>
+                    <th>Periyot (Dk)</th>
+                    <th>Son Çalışma</th>
+                    <th>Gelecek Çalışma</th>
+                    <th>Durum</th>
+                    <th class="text-end pe-4">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for wf in workflows %}
+                <tr>
+                    <td class="ps-4 fw-bold">
+                        <a href="{% url 'workflow_detail' wf.id %}" class="text-decoration-none">{{ wf.name }}</a>
+                    </td>
+                    <td class="text-muted small">{{ wf.description|truncatechars:50 }}</td>
+                    <td>{{ wf.interval_minutes }} dk</td>
+                    <td>
+                        {% if wf.last_run %}
+                        {{ wf.last_run|date:"d M H:i" }}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if wf.next_run %}
+                        {{ wf.next_run|date:"d M H:i" }}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if wf.is_active %}
+                        <span class="badge bg-success">AKTİF</span>
+                        {% else %}
+                        <span class="badge bg-secondary">PASİF</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <a href="{% url 'workflow_run' wf.id %}" class="btn btn-sm btn-outline-success me-1"
+                            title="Şimdi Çalıştır">
+                            <i class="fas fa-play"></i>
+                        </a>
+                        <a href="{% url 'workflow_detail' wf.id %}" class="btn btn-sm btn-outline-primary"
+                            title="Düzenle">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'workflow_delete' wf.id %}" class="btn btn-sm btn-outline-danger" title="Sil">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">Henüz oluşturulmuş bir otomasyon akışı yok.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

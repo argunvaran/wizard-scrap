@@ -1,0 +1,8 @@
+django>=5.0,<6.0
+requests
+playwright
+gunicorn
+psycopg2-binary
+python-dotenv
+dj-database-url
+

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Fixtures - LeagueSys{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Match Fixtures</h1>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Week</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th class="text-end">Home</th>
+                        <th class="text-center">Score</th>
+                        <th>Away</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in fixtures %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ match.week }}</span></td>
+                        <td>{{ match.date }}</td>
+                        <td>{{ match.time }}</td>
+                        <td class="text-end fw-bold">{{ match.home_team }}</td>
+                        <td class="text-center bg-light font-monospace">{{ match.score|default:"vs" }}</td>
+                        <td class="fw-bold">{{ match.away_team }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No fixture data. Import from scraper.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

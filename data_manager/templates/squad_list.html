@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Squad List - LeagueSys{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Squad Database</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <!-- Future filters could go here -->
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Team</th>
+                        <th>#</th>
+                        <th>Player</th>
+                        <th>Pos</th>
+                        <th>Age</th>
+                        <th>M</th>
+                        <th>Start</th>
+                        <th>G</th>
+                        <th>A</th>
+                        <th>Cards</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                    <tr>
+                        <td><span class="badge bg-secondary">{{ player.team_name }}</span></td>
+                        <td>{{ player.jersey_number }}</td>
+                        <td class="fw-bold">{{ player.player_name }}</td>
+                        <td>{{ player.position }}</td>
+                        <td>{{ player.age }}</td>
+                        <td>{{ player.matches_played }}</td>
+                        <td>{{ player.starts }}</td>
+                        <td class="text-primary fw-bold">{{ player.goals }}</td>
+                        <td class="text-success fw-bold">{{ player.assists }}</td>
+                        <td>
+                            {% if player.yellow_cards > 0 %}
+                            <span class="badge bg-warning text-dark">{{ player.yellow_cards }}</span>
+                            {% endif %}
+                            {% if player.red_cards > 0 %}
+                            <span class="badge bg-danger">{{ player.red_cards }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4">No data available. Use the Scraper Tool to populate
+                            the database.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <small class="text-muted">Showing up to 100 recent entries.</small>
+        </div>
+    </div>
+</div>
+{% endblock %}

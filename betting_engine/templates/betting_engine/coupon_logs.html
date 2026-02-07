@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-history me-2"></i>Sistem Logları & Geçmiş</h2>
+        <div>
+            <a href="{% url 'coupon_create' %}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-plus me-1"></i> Yeni Analiz
+            </a>
+            <a href="{% url 'coupon_portfolio' %}" class="btn btn-outline-success">
+                <i class="fas fa-wallet me-1"></i> Portföy
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row align-items-end g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small text-muted">Arama</label>
+                    <input type="text" name="search" class="form-control" placeholder="Takım adı, Lig veya Kupon ID..."
+                        value="{{ search|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small text-muted">Kayıt Türü</label>
+                    <select name="log_type" class="form-select">
+                        <option value="" {% if not log_type %}selected{% endif %}>Tümü</option>
+                        <option value="played" {% if log_type == 'played' %}selected{% endif %}>Oynananlar (Portföy)
+                        </option>
+                        <option value="analyzed" {% if log_type == 'analyzed' %}selected{% endif %}>Sadece Analizler
+                        </option>
+                        <option value="bilyoner" {% if log_type == 'bilyoner' %}selected{% endif %}>Bilyoner Oto.
+                            Oynananlar</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small text-muted">Durum</label>
+                    <select name="status" class="form-select">
+                        <option value="" {% if not status %}selected{% endif %}>Tümü</option>
+                        <option value="won" {% if status == 'won' %}selected{% endif %}>Kazanan (WON)</option>
+                        <option value="lost" {% if status == 'lost' %}selected{% endif %}>Kaybeden (LOST)</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Bekleyen (PENDING)
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i> Filtrele
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'coupon_logs' %}" class="btn btn-outline-secondary w-100">Temizle</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="mb-0">Kupon Hareketleri (Son 200 Kayıt)</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th scope="col" class="ps-4">#ID</th>
+                        <th scope="col">Tarih</th>
+                        <th scope="col">Tür</th>
+                        <th scope="col" style="width: 40%">Maçlar & Tahminler</th>
+                        <th scope="col">Oran</th>
+                        <th scope="col">Yatırım / Kazanç</th>
+                        <th scope="col">Durum</th>
+                        <th scope="col" class="text-end pe-4">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coupon in coupons %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-muted">#{{ coupon.id }}</td>
+                        <td>
+                            <div class="small">{{ coupon.created_at|date:"d M Y" }}</div>
+                            <div class="text-muted small">{{ coupon.created_at|time:"H:i" }}</div>
+                        </td>
+                        <td>
+                            {% if coupon.is_played %}
+                            <span class="badge bg-success text-white">
+                                <i class="fas fa-check-circle me-1"></i> OYNANDI
+                            </span>
+                            {% if coupon.execution_status == 'SUCCESS' %}
+                            <span class="badge bg-primary text-white ms-1" title="Otomatik Oynandı">
+                                <i class="fas fa-robot"></i> OTO: OK
+                            </span>
+                            {% elif coupon.execution_status == 'FAILED' %}
+                            <span class="badge bg-danger text-white ms-1" title="Otomasyon Başarısız">
+                                <i class="fas fa-robot"></i> OTO: HATA
+                            </span>
+                            {% endif %}
+                            {% else %}
+                            {% if coupon.is_archived %}
+                            <span class="badge bg-secondary text-white-50">ARŞİV</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">ANALİZ</span>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <ul class="list-unstyled mb-0 small">
+                                {% for item in coupon.items.all %}
+                                <li class="mb-1">
+                                    <span class="text-dark fw-bold">{{ item.home_team }} - {{ item.away_team }}</span>
+                                    <span class="text-muted ms-1">({{ item.match_time }})</span>
+                                    <br>
+                                    <span class="badge bg-light text-dark border">{{ item.prediction }}</span>
+                                    <span class="text-primary fw-bold ms-1">{{ item.odds }}</span>
+                                    {% if item.status == 'WON' %}
+                                    <i class="fas fa-check text-success ms-1"></i>
+                                    {% elif item.status == 'LOST' %}
+                                    <i class="fas fa-times text-danger ms-1"></i>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td>
+                            <span class="fw-bold">{{ coupon.total_odds }}</span>
+                        </td>
+                        <td>
+                            <div><small class="text-muted">Yat:</small> {{ coupon.amount }} TL</div>
+                            {% if coupon.status == 'WON' %}
+                            <div class="text-success fw-bold"><small class="text-muted">Kaz:</small> {{
+                                coupon.potential_return }} TL</div>
+                            {% else %}
+                            <div class="text-muted"><small>Pot:</small> {{ coupon.potential_return }} TL</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if coupon.status == 'WON' %}
+                            <span class="badge bg-success">KAZANDI</span>
+                            {% elif coupon.status == 'LOST' %}
+                            <span class="badge bg-danger">KAYBETTİ</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">BEKLİYOR</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'coupon_detail' coupon.id %}" class="btn btn-sm btn-light border me-1"
+                                title="Detaylar">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <form action="{% url 'coupon_delete' coupon.id %}" method="post" class="d-inline-block"
+                                onsubmit="return confirm('Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Sil">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-search fa-2x mb-3 text-secondary"></i>
+                            <p class="mb-0">Kayıt bulunamadı.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

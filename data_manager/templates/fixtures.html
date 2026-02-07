@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Fikstür{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-end">
+                <!-- Filter Form (Left) -->
+                <form method="get" class="d-flex align-items-end gap-3">
+                    <div>
+                        <label class="form-label fw-bold text-secondary small">FİLTRELE</label>
+                        <select name="country" class="form-select" onchange="this.form.submit()">
+                            {% for value, label in form.fields.country.choices %}
+                            <option value="{{ value }}" {% if value == selected_country %}selected{% endif %}>{{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <a href="{% url 'listings' 'fixtures' %}" class="btn btn-outline-secondary">Sıfırla</a>
+                    </div>
+                </form>
+
+                <!-- Action Button (Right) -->
+                <div class="d-flex align-items-end gap-2">
+                    <div class="text-end">
+                        <label class="form-label fw-bold text-primary small">VERİ GÜNCELLEME</label>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="fetchMenu"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-cloud-download-alt me-1"></i> Verileri Çek
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="fetchMenu">
+                                <li>
+                                    <h6 class="dropdown-header">Ülke Seçin</h6>
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'turkey' 'fixtures' %}"
+                                        onclick="return confirm('Türkiye Fikstür çekilsin mi?')">🇹🇷 Türkiye</a></li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'england' 'fixtures' %}"
+                                        onclick="return confirm('İngiltere Fikstür çekilsin mi?')">🇬🇧 İngiltere</a>
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'spain' 'fixtures' %}"
+                                        onclick="return confirm('İspanya Fikstür çekilsin mi?')">🇪🇸 İspanya</a></li>
+                                <li><a class="dropdown-item" href="{% url 'fetch_data_view' 'italy' 'fixtures' %}"
+                                        onclick="return confirm('İtalya Fikstür çekilsin mi?')">🇮🇹 İtalya</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h4 class="mb-0">Fikstür</h4>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ülke</th>
+                        <th>Hafta</th>
+                        <th>Tarih / Saat</th>
+                        <th class="text-end">Ev Sahibi</th>
+                        <th class="text-center">Skor</th>
+                        <th>Deplasman</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            {% if item.country == 'TURKEY' %}<span class="badge bg-danger">TR</span>
+                            {% elif item.country == 'ENGLAND' %}<span class="badge bg-primary">EN</span>
+                            {% elif item.country == 'SPAIN' %}<span class="badge bg-warning text-dark">ES</span>
+                            {% elif item.country == 'ITALY' %}<span class="badge bg-success">IT</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ item.week }}</span></td>
+                        <td>
+                            <div>{{ item.date }}</div>
+                            <small class="text-muted">{{ item.time }}</small>
+                        </td>
+                        <td class="text-end fw-bold">{{ item.home_team }}</td>
+                        <td class="text-center"><span class="badge bg-dark">{{ item.score }}</span></td>
+                        <td class="fw-bold">{{ item.away_team }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Veri bulunamadı.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                <i class="fas fa-eye me-2"></i>Veri Önizleme: {{ country|title }} - {{ data_type|title }}
+            </h4>
+            <span class="badge bg-light text-primary fs-6">{{ count }} Kayıt Bulundu</span>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info border-left-info" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                Bu veriler <strong>henüz veritabanına kaydedilmedi.</strong> Lütfen aşağıdan kontrol edin ve onaylayın.
+            </div>
+
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-bordered table-striped table-hover">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            {% for key in data.0.keys %}
+                            <th>{{ key|title }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            {% for value in row.values %}
+                            <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light d-flex justify-content-end gap-2">
+            <a href="{% url 'automation_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-1"></i> İptal
+            </a>
+            <form action="{% url 'data_commit_view' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save me-1"></i> Veritabanına Kaydet
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

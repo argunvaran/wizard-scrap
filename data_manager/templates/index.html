@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome - LeagueSys{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3 shadow-sm border">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold text-dark">Welcome to LeagueSys</h1>
+        <p class="col-md-8 fs-4 text-muted">A powerful web-based system to manage football squad data, analyze
+            statistics, and view scraped insights from the Turkish Super Lig.</p>
+        {% if not user.is_authenticated %}
+        <div class="mt-4">
+            <a class="btn btn-primary btn-lg px-4 gap-3" href="{% url 'login' %}">Log In</a>
+            <a class="btn btn-outline-secondary btn-lg px-4" href="{% url 'register' %}">Register</a>
+        </div>
+        {% else %}
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
+            <a class="btn btn-primary btn-lg px-4 gap-3" href="{% url 'dashboard' %}">Dashboard</a>
+            <a class="btn btn-success btn-lg px-4 gap-3" href="{% url 'coupon_create' %}">
+                <i class="fas fa-magic me-2"></i>Kupon Oluştur
+            </a>
+            <a class="btn btn-outline-dark btn-lg px-4" href="{% url 'coupon_list' %}">Kuponlarım</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

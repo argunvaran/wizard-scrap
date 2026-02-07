@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Detaylı Simülasyon: {{ match.home_team }} vs {{ match.away_team }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-auto">
+        <a href="{% url 'analysis_dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i>
+            Geri</a>
+    </div>
+    <div class="col">
+        <h2 class="mb-0">
+            <span class="text-muted small d-block mb-1">{{ match.league }} // {{ match.match_time }}</span>
+            {{ match.home_team }} <span class="text-danger">vs</span> {{ match.away_team }}
+        </h2>
+    </div>
+</div>
+
+<!-- TOP SUMMARY -->
+<div class="row mb-5">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg h-100">
+            <div class="card-body p-5 text-center">
+                <h6 class="text-uppercase text-muted letter-spacing-1 mb-3">AI MODEL TAHMİNİ (Monte Carlo Simülasyonu)
+                </h6>
+
+                <h1 class="display-3 fw-bold text-primary mb-2">
+                    {% if report.prediction == '1' %} MS 1
+                    {% elif report.prediction == '2' %} MS 2
+                    {% else %} Beraberlik
+                    {% endif %}
+                </h1>
+
+                <div class="d-inline-block px-3 py-1 bg-light rounded-pill border mb-4">
+                    <span class="me-2">Güven:</span>
+                    <span
+                        class="fw-bold {% if report.confidence == 'Yüksek' %}text-success{% elif report.confidence == 'Orta' %}text-warning{% else %}text-danger{% endif %}">
+                        {{ report.confidence }}
+                    </span>
+                </div>
+
+                <p class="lead">{{ report.risk_analysis }}</p>
+
+                <hr class="my-4 w-25 mx-auto">
+                <div class="row justify-content-center">
+                    <div class="col-auto text-center mx-3">
+                        <div class="display-6 fw-bold text-success">%{{ report.probabilities.home }}</div>
+                        <small class="text-muted">Ev Sahibi</small>
+                    </div>
+                    <div class="col-auto text-center mx-3">
+                        <div class="display-6 fw-bold text-warning">%{{ report.probabilities.draw }}</div>
+                        <small class="text-muted">Beraberlik</small>
+                    </div>
+                    <div class="col-auto text-center mx-3">
+                        <div class="display-6 fw-bold text-danger">%{{ report.probabilities.away }}</div>
+                        <small class="text-muted">Deplasman</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow h-100 bg-secondary text-white">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4"><i class="bi bi-bar-chart-fill me-2"></i>İstatistiksel Bakış</h5>
+
+                <!-- League Standing (If Available) -->
+                {% if report.home_stats.rank != "-" %}
+                <div class="d-flex justify-content-between text-center mb-4 small text-white-50">
+                    <div class="w-50">
+                        <div class="fw-bold text-white fs-4">#{{ report.home_stats.rank }}</div>
+                        <div>{{ report.home_stats.points }} Puan ({{ report.home_stats.played }} Maç)</div>
+                    </div>
+                    <div class="border-start border-white-50"></div>
+                    <div class="w-50">
+                        <div class="fw-bold text-white fs-4">#{{ report.away_stats.rank }}</div>
+                        <div>{{ report.away_stats.points }} Puan ({{ report.away_stats.played }} Maç)</div>
+                    </div>
+                </div>
+                <hr class="border-white-50 my-3">
+                {% endif %}
+
+                <!-- Stats Comparison Bars -->
+                <div class="mb-4">
+                    <label class="small text-white-50 d-flex justify-content-between mb-1">
+                        <span>Gol Atma (GF)</span>
+                        <span>{{ report.home_stats.goals_for }} vs {{ report.away_stats.goals_for }}</span>
+                    </label>
+                    <div class="progress" style="height: 6px;">
+                        {% widthratio report.home_stats.goals_for 1 2 as h_gf_w %}
+                        <!-- Simple scaling logic or use percentage relative to sum -->
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 50%" aria-valuenow="50"
+                            aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 50%" aria-valuenow="50"
+                            aria-valuemin="0" aria-valuemax="100"></div>
+                        <!-- Note: Real percentage calculation is tricky in template without custom filter, using simplified visual for now (50/50 placeholder effectively if complex) - better to just show raw bars separately -->
+                    </div>
+                    <!-- Better visual: Two separate bars per metric or just raw numbers? Let's use raw numbers with icons for clarity -->
+                    <div class="d-flex justify-content-between align-items-center mt-2 small">
+                        <span class="text-info"><i class="bi bi-bullseye me-1"></i>{{ report.home_stats.goals_for }} Gol
+                            Attı</span>
+                        <span class="text-warning">{{ report.away_stats.goals_for }} Gol Attı<i
+                                class="bi bi-bullseye ms-1"></i></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2 small">
+                        <span class="text-danger"><i class="bi bi-shield-x me-1"></i>{{ report.home_stats.goals_against
+                            }} Gol Yedi</span>
+                        <span class="text-danger">{{ report.away_stats.goals_against }} Gol Yedi<i
+                                class="bi bi-shield-x ms-1"></i></span>
+                    </div>
+                </div>
+
+                <div class="mb-4 bg-dark bg-opacity-25 p-3 rounded">
+                    <label class="small text-white-50 mb-2">Beklenen Gol (xG)</label>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="text-start">
+                            <div class="fs-3 fw-bold">{{ report.expected_goals.home|floatformat:2 }}</div>
+                            <small class="text-white-50">{{ match.home_team }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fs-3 fw-bold">{{ report.expected_goals.away|floatformat:2 }}</div>
+                            <small class="text-white-50">{{ match.away_team }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="small text-white-50 mb-2">En Olası Skorlar</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for sc in report.likely_scores %}
+                        <span class="badge bg-light text-dark fs-6 font-monospace border"><i
+                                class="bi bi-check-lg text-success me-1"></i>{{ sc }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mt-auto">
+                    <div class="small text-white-50 mb-1">Maç Oranları</div>
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-light btn-sm flex-fill">MS 1<br><span
+                                class="fw-bold">{{ match.ms_1 }}</span></button>
+                        <button type="button" class="btn btn-outline-light btn-sm flex-fill">X<br><span
+                                class="fw-bold">{{ match.ms_x }}</span></button>
+                        <button type="button" class="btn btn-outline-light btn-sm flex-fill">MS 2<br><span
+                                class="fw-bold">{{ match.ms_2 }}</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI COMMENTARY SECTION -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card border-0 shadow-lg text-white"
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-robot me-2"></i>GEMINI AI MAÇ ANALİZİ</h5>
+                    <button id="btnAskAI" class="btn btn-light rounded-pill px-4 fw-bold">
+                        <i class="bi bi-stars me-2"></i>Yapay Zeka Yorumlasın
+                    </button>
+                </div>
+
+                <div id="aiLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">Yükleniyor...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Maç verileri analiz ediliyor...</p>
+                </div>
+
+                <div id="aiResult" class="d-none">
+                    <div class="bg-white text-dark p-4 rounded shadow-sm"
+                        style="white-space: pre-line; line-height: 1.6;">
+                        <!-- Content will be injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('btnAskAI').addEventListener('click', function () {
+        const btn = this;
+        const loading = document.getElementById('aiLoading');
+        const result = document.getElementById('aiResult');
+        const resultContent = result.querySelector('div');
+
+        // UI State
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Analiz Ediliyor...';
+        loading.classList.remove('d-none');
+        result.classList.add('d-none');
+
+        // Fetch Token
+        const csrfToken = '{{ csrf_token }}';
+
+        fetch("{% url 'ask_gemini_analysis' match.unique_key %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('d-none');
+
+                if (data.success) {
+                    resultContent.innerHTML = data.analysis
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold formatting
+                        .replace(/- /g, '• ') // Dash bullet points
+                        .replace(/\* /g, '• '); // Asterisk bullet points
+
+                    result.classList.remove('d-none');
+                    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Analiz Tamamlandı';
+                } else {
+                    alert('Hata: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i>Tekrar Dene';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.classList.add('d-none');
+                alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i>Tekrar Dene';
+            });
+    });
+</script>
+
+<!-- DETAILS GRID -->
+<div class="row g-4">
+    <!-- Home Analysis -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="bi bi-house-door-fill me-2"></i>{{ match.home_team }}</h5>
+                {% if report.home_stats.rank != "-" %}
+                <span class="badge bg-white text-primary rounded-pill">#{{ report.home_stats.rank }}. Sıra</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <!-- Mini Stats Grid -->
+                <div class="row text-center mb-4 g-2">
+                    <div class="col-4">
+                        <div class="bg-light p-2 rounded">
+                            <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Puan</div>
+                            <div class="fw-bold fs-5 text-primary">{{ report.home_stats.points }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-light p-2 rounded">
+                            <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Averaj</div>
+                            <div class="fw-bold fs-5 text-dark">{{ report.home_stats.average }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-light p-2 rounded">
+                            <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Form</div>
+                            <!-- Simple Form Logic: Compare score parts -->
+                            <!-- Note: Logic is complex in template, using simplified list below -->
+                            <small class="d-block mt-1">Son 6 Maç</small>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-uppercase text-muted small letter-spacing-1 mb-3">Kilit Oyuncular</h6>
+                {% if report.home_key_players %}
+                <div class="list-group list-group-flush mb-4">
+                    {% for p in report.home_key_players %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                {{ forloop.counter }}
+                            </div>
+                            <div>
+                                <div class="fw-bold">{{ p.player_name }}</div>
+                                <div class="small text-muted">{{ p.position }} • {{ p.matches_played }} Maç</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span
+                                class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ p.goals }} Gol</span>
+                                
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ p.assists }} Asist</span>
+                                
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small">Oyuncu verisi bulunamadı.</p>
+                {% endif %}
+
+                <h6 class="text-uppercase text-muted small letter-spacing-1 mb-3">Son Maçlar (Form Durumu)</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover small mb-0">
+                        {% for f in report.home_form_data %}
+                        <tr>
+                            <td class="text-muted" style="width: 80px;">{{ f.date }}</td>
+                            <td>
+                                <span class="{% if match.home_team in f.home_team %}fw-bold text-primary{% endif %}">{{ f.home_team }}</span>
+                                    
+                                <span class="text-muted mx-1">v</span>
+                                <span class="{% if match.home_team in f.away_team %}fw-bold text-primary{% endif %}">{{ f.away_team }}</span>
+                                    
+                            </td>
+                            <td class="fw-bold text-end">{{ f.score }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Away Analysis -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="bi bi-airplane-fill me-2"></i>{{ match.away_team }}</h5>
+                {% if report.away_stats.rank != "-" %}
+                <span class="badge bg-white text-danger rounded-pill">#{{ report.away_stats.rank }}. Sıra</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <!-- Mini Stats Grid -->
+                <div class="row text-center mb-4 g-2">
+                    <div class="col-4">
+                        <div class="bg-light p-2 rounded">
+                            <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Puan</div>
+                            <div class="fw-bold fs-5 text-danger">{{ report.away_stats.points }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-light p-2 rounded">
+                            <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Averaj</div>
+                            <div class="fw-bold fs-5 text-dark">{{ report.away_stats.average }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="bg-light p-2 rounded">
+                            <div class="small text-muted text-uppercase" style="font-size: 0.7rem;">Form</div>
+                            <small class="d-block mt-1">Son 6 Maç</small>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-uppercase text-muted small letter-spacing-1 mb-3">Kilit Oyuncular</h6>
+                {% if report.away_key_players %}
+                <div class="list-group list-group-flush mb-4">
+                    {% for p in report.away_key_players %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                {{ forloop.counter }}
+                            </div>
+                            <div>
+                                <div class="fw-bold">{{ p.player_name }}</div>
+                                <div class="small text-muted">{{ p.position }} • {{ p.matches_played }} Maç</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span
+                                class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ p.goals }} Gol</span>
+                                
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ p.assists }} Asist</span>
+                                
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small">Oyuncu verisi bulunamadı.</p>
+                {% endif %}
+
+                <h6 class="text-uppercase text-muted small letter-spacing-1 mb-3">Son Maçlar (Form Durumu)</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover small mb-0">
+                        {% for f in report.away_form_data %}
+                        <tr>
+                            <td class="text-muted" style="width: 80px;">{{ f.date }}</td>
+                            <td>
+                                <span class="{% if match.away_team in f.home_team %}fw-bold text-danger{% endif %}">{{ f.home_team }}</span>
+                                    
+                                <span class="text-muted mx-1">v</span>
+                                <span class="{% if match.away_team in f.away_team %}fw-bold text-danger{% endif %}">{{ f.away_team }}</span>
+                                    
+                            </td>
+                            <td class="fw-bold text-end">{{ f.score }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

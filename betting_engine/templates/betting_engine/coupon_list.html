@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Kuponlarım</h2>
+        <a href="{% url 'coupon_create' %}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>Yeni Kupon
+        </a>
+    </div>
+
+    {% if coupons %}
+    <div class="row">
+        {% for coupon in coupons %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div
+                    class="card-header d-flex justify-content-between {% if coupon.status == 'WON' %}bg-success text-white{% elif coupon.status == 'LOST' %}bg-danger text-white{% else %}bg-light{% endif %}">
+                    <div>
+                        <span class="fw-bold">#{{ coupon.id }}</span>
+                        <!-- Display Confidence -->
+                        {% if coupon.confidence > 0 %}
+                        <span class="badge bg-warning text-dark ms-2">%{{ coupon.confidence|floatformat:1 }}</span>
+                        {% endif %}
+                    </div>
+                    <span>{{ coupon.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-4">
+                            <small class="text-muted d-block">Tutar</small>
+                            <strong>{{ coupon.amount }} TL</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Oran</small>
+                            <strong>{{ coupon.total_odds }}</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Kazanç</small>
+                            <strong class="text-success">{{ coupon.potential_return }} TL</strong>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush small">
+                        {% for item in coupon.items.all %}
+                        <li class="list-group-item bg-transparent px-0 py-1">
+                            <div class="d-flex justify-content-between">
+                                <span>{{ item.home_team }} - {{ item.away_team }}</span>
+                                <span class="fw-bold">{{ item.prediction }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-white border-top-0">
+                    <a href="{% url 'coupon_detail' coupon.id %}"
+                        class="btn btn-sm btn-outline-primary w-100">Detaylar</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Henüz hiç kupon oluşturmadınız.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

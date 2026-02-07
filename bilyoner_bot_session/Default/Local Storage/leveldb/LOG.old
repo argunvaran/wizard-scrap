@@ -1,0 +1,18 @@
+2026/02/07-19:13:42.018 17f0 Reusing MANIFEST C:\Code\web_scraper_0\web_app\bilyoner_bot_session\Default\Local Storage\leveldb/MANIFEST-000001
+2026/02/07-19:13:42.023 17f0 Recovering log #107
+2026/02/07-19:13:42.024 17f0 Reusing old log C:\Code\web_scraper_0\web_app\bilyoner_bot_session\Default\Local Storage\leveldb/000107.log 
+2026/02/07-19:15:42.389 4844 Level-0 table #111: started
+2026/02/07-19:15:42.412 4844 Level-0 table #111: 50796 bytes OK
+2026/02/07-19:15:42.417 4844 Delete type=0 #107
+2026/02/07-19:17:42.387 4844 Level-0 table #113: started
+2026/02/07-19:17:42.408 4844 Level-0 table #113: 51212 bytes OK
+2026/02/07-19:17:42.411 4844 Delete type=0 #110
+2026/02/07-19:17:42.412 4844 Compacting 4@0 + 1@1 files
+2026/02/07-19:17:42.421 4844 Generated table #114@0: 44 keys, 27613 bytes
+2026/02/07-19:17:42.422 4844 Compacted 4@0 + 1@1 files => 27613 bytes
+2026/02/07-19:17:42.424 4844 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/02/07-19:17:42.425 4844 Delete type=2 #103
+2026/02/07-19:17:42.425 4844 Delete type=2 #106
+2026/02/07-19:17:42.425 4844 Delete type=2 #108
+2026/02/07-19:17:42.425 4844 Delete type=2 #111
+2026/02/07-19:17:42.425 4844 Delete type=2 #113

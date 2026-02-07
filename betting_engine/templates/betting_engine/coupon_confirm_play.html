@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0"><i class="fas fa-robot me-2"></i>Bilyoner Bot Onayı</h4>
+                </div>
+                <div class="card-body p-4">
+                    <h5 class="text-center mb-4">Kupon #{{ coupon.id }} Oynanmak Üzere Hazır</h5>
+
+                    <div class="alert alert-info border-0 shadow-sm mb-4">
+                        <div class="row text-center">
+                            <div class="col">
+                                <small class="text-uppercase text-muted fw-bold">Yatırım</small>
+                                <h3 class="fw-bold text-dark">{{ coupon.amount }} TL</h3>
+                            </div>
+                            <div class="col border-start">
+                                <small class="text-uppercase text-muted fw-bold">Olası Kazanç</small>
+                                <h3 class="fw-bold text-success">{{ coupon.potential_return }} TL</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="border-bottom pb-2 mb-3">Maç Listesi</h6>
+                    <ul class="list-group list-group-flush mb-4 small">
+                        {% for item in coupon.items.all %}
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-secondary me-2">{{ item.league }}</span>
+                                <strong>{{ item.home_team }} - {{ item.away_team }}</strong>
+                                <div class="text-muted small mt-1">{{ item.match_date }} {{ item.match_time }}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-light text-dark border">{{ item.prediction }}</span>
+                                <span class="fw-bold ms-2 text-primary">{{ item.odds }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <hr class="my-4">
+
+                    <form method="POST" action="{% url 'play_coupon_on_bilyoner' coupon.id %}">
+                        {% csrf_token %}
+
+                        <div class="d-grid gap-3">
+                            <div class="text-center mb-2">
+                                <span class="text-muted small">Lütfen çalıştırma modunu seçin:</span>
+                            </div>
+
+                            <button type="submit" name="skip_verification" value="off"
+                                class="btn btn-lg btn-success py-3 shadow-sm">
+                                <i class="fas fa-search me-2"></i> GÜVENLİ BAŞLAT
+                                <small class="d-block fw-normal fs-6 opacity-75">Kupon içeriği (takım/oran) kontrol
+                                    edilir</small>
+                            </button>
+
+                            <button type="submit" name="skip_verification" value="on"
+                                class="btn btn-lg btn-warning py-3 shadow-sm text-dark"
+                                onclick="return confirm('DİKKAT: Güvenlik kontrolü kapatılacak! Bot, oranlar değişmiş olsa bile kuponu oynayacak. Emin misin?');">
+                                <i class="fas fa-bolt me-2"></i> HIZLI BAŞLAT (Kontrolsüz)
+                                <small class="d-block fw-normal fs-6 opacity-75">Kontrol yapmadan direkt oynar
+                                    (Riskli)</small>
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <a href="{% url 'coupon_portfolio' %}" class="text-muted text-decoration-none">
+                                <i class="fas fa-arrow-left me-1"></i> İptal ve Geri Dön
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

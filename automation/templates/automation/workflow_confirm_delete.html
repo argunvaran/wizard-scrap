@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-trash-alt me-2"></i>Akışı Sil</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="fs-5"><strong>{{ workflow.name }}</strong></p>
+                    <p class="text-secondary">Bu otomasyon akışını ve ilgili tüm işlem geçmişini (logları) silmek
+                        üzeresiniz.</p>
+                    <div class="alert alert-warning">
+                        Bu işlem geri alınamaz.
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
+                    <a href="{% url 'workflow_list' %}" class="btn btn-outline-secondary px-4">İptal</a>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger px-4">Evet, Sil</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

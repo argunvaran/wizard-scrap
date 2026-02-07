@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="card border-0 shadow-lg">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Kupon #{{ coupon.id }}</h5>
+            <!-- Status Badge Logic -->
+            {% if coupon.status == 'WON' %}
+            <span class="badge bg-success">TUTTU</span>
+            {% elif coupon.status == 'LOST' %}
+            <span class="badge bg-danger">YATTI</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">BEKLİYOR</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row text-center mb-4">
+                <div class="col-md-4">
+                    <h6 class="text-muted">Yatırılan</h6>
+                    <h3>{{ coupon.amount }} TL</h3>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted">Toplam Oran</h6>
+                    <h3>{{ coupon.total_odds }}</h3>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-muted">Olası Kazanç</h6>
+                    <h3 class="text-success">{{ coupon.potential_return }} TL</h3>
+                </div>
+            </div>
+
+            <hr>
+            <h5 class="mb-3">Maçlar</h5>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Lig</th>
+                            <th>Takımlar</th>
+                            <th>Tahmin</th>
+                            <th>Oran</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in coupon.items.all %}
+                        <tr>
+                            <td>{{ item.match_date }} {{ item.match_time }}</td>
+                            <td>{{ item.league }}</td>
+                            <td>{{ item.home_team }} - {{ item.away_team }}</td>
+                            <td><span class="fw-bold">{{ item.prediction }}</span></td>
+                            <td>{{ item.odds }}</td>
+                            <td>
+                                {% if item.status == 'WON' %}
+                                <span class="badge bg-success">Success</span>
+                                {% elif item.status == 'LOST' %}
+                                <span class="badge bg-danger">Lost</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer text-end">
+            <a href="{% url 'coupon_list' %}" class="btn btn-secondary">Tüm Kuponlarım</a>
+            <a href="{% url 'coupon_create' %}" class="btn btn-primary">Yeni Kupon</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Veri İnceleme ve Onay{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="text-secondary"><i class="bi bi-eye"></i> Çekilen Verilerin İncelenmesi</h2>
+        <p class="text-muted">Aşağıdaki veriler Bilyoner'den yeni çekildi. Canlı sisteme aktarmadan önce kontrol
+            edebilirsiniz.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <form action="{% url 'publish_scraped_data' %}" method="post">
+            {% csrf_token %}
+            <a href="{% url 'scrape_hub' %}" class="btn btn-outline-danger me-2">İptal</a>
+            <button type="submit" class="btn btn-success btn-lg shadow">
+                <i class="bi bi-check-circle-fill"></i> ONAYLA VE YAYINLA
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Tarih</th>
+                        <th>Saat</th>
+                        <th>Ülke/Lig</th>
+                        <th>Ev Sahibi</th>
+                        <th>Deplasman</th>
+                        <th class="text-center text-warning">MS 1</th>
+                        <th class="text-center text-warning">MS X</th>
+                        <th class="text-center text-warning">MS 2</th>
+                        <th class="text-center text-info">2.5 Alt</th>
+                        <th class="text-center text-info">2.5 Üst</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in staging_data %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-muted">{{ item.match_date }}</td>
+                        <td class="text-danger fw-bold">{{ item.match_time }}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ item.get_country_display }}</span>
+                            <small class="d-block text-muted">{{ item.league }}</small>
+                        </td>
+                        <td class="fw-bold">{{ item.home_team }}</td>
+                        <td class="fw-bold">{{ item.away_team }}</td>
+                        <td class="text-center table-warning fw-bold">{{ item.ms_1 }}</td>
+                        <td class="text-center table-warning">{{ item.ms_x }}</td>
+                        <td class="text-center table-warning fw-bold">{{ item.ms_2 }}</td>
+                        <td class="text-center table-info">{{ item.under_2_5|default:"-" }}</td>
+                        <td class="text-center table-info">{{ item.over_2_5|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            İncelenecek veri bulunamadı. Lütfen önce "Veri Çek" menüsünden işlem başlatın.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

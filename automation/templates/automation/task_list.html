@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tasks me-2"></i>Tanımlı Görevler (Tasks)</h2>
+        <a href="{% url 'workflow_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Akışlara Dön
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Bu görevler sistem tarafından <code>services.py</code> dosyasından otomatik olarak taranıp veritabanına
+        kaydedilir.
+        "Görevleri Sıfırla & Yükle" butonu ile burayı güncelleyebilirsiniz.
+    </div>
+
+    <div class="row">
+        {% for task in tasks %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ task.name }}</h5>
+                    <h6 class="card-subtitle mb-3 text-muted border-bottom pb-2">
+                        <i class="fas fa-code me-1"></i> {{ task.function_path }}
+                    </h6>
+                    <p class="card-text text-dark">{{ task.description }}</p>
+
+                    <button class="btn btn-sm btn-outline-secondary w-100" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#code{{ task.id }}">
+                        <i class="fas fa-eye me-1"></i> Kaynak Kodu Görüntüle
+                    </button>
+
+                    <div class="collapse mt-2" id="code{{ task.id }}">
+                        <pre class="bg-light p-2 border rounded small"
+                            style="max-height: 300px; overflow-y: auto;"><code>{{ task.code_snippet }}</code></pre>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0">
+                    <span class="badge bg-light text-dark border">Otomatik Tanımlı</span>
+
+                    <form action="{% url 'task_run_direct' task.id %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-primary float-end"
+                            onclick="return confirm('Bu görevi şimdi çalıştırmak istiyor musunuz?');">
+                            <i class="fas fa-play me-1"></i> Şimdi Çalıştır
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="fas fa-exclamation-triangle fa-2x mb-3 text-warning"></i>
+            <p>Sistemde kayıtlı görev bulunamadı. Lütfen "Otomasyon > Görevleri Sıfırla & Yükle" yapınız.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

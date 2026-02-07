@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Analiz Merkezi{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-success mb-3"><i class="bi bi-magic"></i> Analiz Merkezi</h2>
+        <p class="text-muted">Mevcut bülten verileri ve lig istatistikleri harmanlanarak oluşturulan tahminler.</p>
+    </div>
+</div>
+
+<div class="row">
+    {% for item in analysis_results %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0 pt-3">
+                <span class="badge bg-secondary float-end">{{ item.match.match_time }}</span>
+                <small class="text-muted text-uppercase fw-bold">{{ item.match.league }}</small>
+            </div>
+            <div class="card-body text-center">
+                <h5 class="card-title fw-bold mb-3">
+                    {{ item.match.home_team }} <span class="text-muted fs-6">vs</span> {{ item.match.away_team }}
+                </h5>
+
+                {% if item.result.status == 'success' %}
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar"
+                        style="width: {{ item.result.home_win_prob }}%" title="MS 1: %{{ item.result.home_win_prob }}">
+                        %{{ item.result.home_win_prob }}
+                    </div>
+                    <div class="progress-bar bg-warning text-dark" role="progressbar"
+                        style="width: {{ item.result.draw_prob }}%" title="Beraberlik: %{{ item.result.draw_prob }}">
+                        %{{ item.result.draw_prob }}
+                    </div>
+                    <div class="progress-bar bg-danger" role="progressbar"
+                        style="width: {{ item.result.away_win_prob }}%" title="MS 2: %{{ item.result.away_win_prob }}">
+                        %{{ item.result.away_win_prob }}
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <div class="border rounded p-2 bg-light">
+                            <small class="d-block text-muted">Tahmin</small>
+                            <strong class="fs-5 text-primary">{{ item.result.prediction }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2 bg-light">
+                            <small class="d-block text-muted">Skor</small>
+                            <strong class="fs-5">{{ item.result.predicted_score }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                {% if item.result.home_stats and item.result.away_stats %}
+                <div class="d-flex justify-content-between small text-muted px-2">
+                    <span title="Puan/Sıra">{{ item.result.home_stats.points }}P (#{{ item.result.home_stats.rank }})</span>
+                        
+
+                    <span>Form Durumu</span>
+                    <span title="Puan/Sıra"> (#{{ item.result.away_stats.rank }}) {{ item.result.away_stats.points }}P</span>
+                        
+
+                </div>
+                {% endif %}
+
+                {% else %}
+                <div class="alert alert-secondary mt-3">
+                    <i class="bi bi-exclamation-circle"></i> {{ item.result.reason }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-light border-top-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-light text-dark border">
+                        Oranlar: {{ item.match.ms_1 }} - {{ item.match.ms_x }} - {{ item.match.ms_2 }}
+                    </span>
+                    {% if item.value_bet %}
+                    <span class="badge bg-success animate-pulse"><i class="bi bi-star-fill"></i> {{ item.value_bet }}</span>
+                        
+
+                    {% endif %}
+                </div>
+                <div class="d-grid mt-3">
+                    <a href="{% url 'analyze_match_advanced' item.match.unique_key %}"
+                        class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-cpu-fill"></i> Detaylı Simülasyon (Pro)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Henüz analiz edilecek maç bulunamadı. Lütfen önce <b>Bülten</b> sayfasından verileri güncelleyin veya İçe
+            Aktar menüsünü kullanın.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fas fa-robot me-2"></i>Bilyoner Bot Ayarları</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    <strong>Güvenlik Bilgisi:</strong> Bilgileriniz veritabanında şifrelenmiş (Encrypted) olarak
+                    saklanır.
+                    Şifrenizi güncellemek istemiyorsanız aşağıdaki alanı boş bırakabilirsiniz.
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">TC Kimlik / Üye No</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                            value="{{ credential.decrypted_username|default:'' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Şifre</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                            placeholder="Değiştirmek istiyorsanız yeni şifreyi girin">
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Bilgileri Kaydet
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-muted small">
+                Bot, bu bilgileri kullanarak otomatik giriş yapar ve kuponlarınızı oynar.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
