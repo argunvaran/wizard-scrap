@@ -33,7 +33,7 @@ class ScraperManager:
         scraper = TurkeyStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
-    def scrape_turkey_fixtures(self, url=None, season=2024):
+    def scrape_turkey_fixtures(self, url=None, season=2025):
         logger.info(f"Starting Turkey Fixtures scrape (URL: {url}, Season: {season})...")
         scraper = TurkeyFixturesScraper()
         return scraper.scrape(url, season=season)

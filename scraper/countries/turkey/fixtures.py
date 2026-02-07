@@ -6,7 +6,7 @@ from scraper.base import BaseScraper
 logger = logging.getLogger('scraper')
 
 class TurkeyFixturesScraper(BaseScraper):
-    def scrape(self, url=None, season=2024):
+    def scrape(self, url=None, season=2025):
         # Default URL structure if URL is not provided
         if not url:
             url = f"https://www.transfermarkt.com.tr/super-lig/gesamtspielplan/wettbewerb/TR1?saison_id={season}"
