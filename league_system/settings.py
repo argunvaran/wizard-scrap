@@ -144,3 +144,48 @@ LOGIN_URL = 'login'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Logging Configuration
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "scraper_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "scraper.log",
+            "maxBytes": 50 * 1024 * 1024,  # 50 MB
+            "backupCount": 10,
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "scraper": {  # Use this logger name in your scraper scripts
+            "handlers": ["console", "scraper_file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+    },
+}

@@ -6,9 +6,14 @@ from scraper.base import BaseScraper
 from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
 
+import logging
+
+logger = logging.getLogger('scraper')
+
 class BilyonerScraper(BaseScraper):
     def start_browser(self):
         if not self.playwright:
+            logger.info("Initializing Playwright and Browser...")
             self.playwright = sync_playwright().start()
             args = [
                 "--disable-blink-features=AutomationControlled",
@@ -28,6 +33,7 @@ class BilyonerScraper(BaseScraper):
                 headless=True, 
                 args=args
             )
+            logger.info("Browser launched in HEADLESS mode.")
             context = self.browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -40,7 +46,7 @@ class BilyonerScraper(BaseScraper):
     def scrape(self, custom_url=None):
         # User specified filtered URL for Multiple Leagues (Turkey, England, Spain, Italy)
         url = custom_url or "https://www.bilyoner.com/iddaa/futbol?lig[]=1%3A%C4%B0ngiltere%20Premier%20Lig&lig[]=1%3AT%C3%BCrkiye%20S%C3%BCper%20Lig&lig[]=1%3A%C4%B0spanya%20La%20Liga&lig[]=1%3A%C4%B0talya%20Serie%20A"
-        print(f"Connecting to {url}...")
+        logger.info(f"Connecting to {url}...")
         self.start_browser()
         
         try:
@@ -48,6 +54,7 @@ class BilyonerScraper(BaseScraper):
             loaded = False
             for attempt in range(3):
                 try:
+                    logger.debug(f"Page load attempt {attempt + 1}")
                     self.page.goto(url, timeout=90000, wait_until="networkidle")
                     time.sleep(3)
                     try: self.page.get_by_text("Kabul Et").click(timeout=1000)
@@ -56,10 +63,16 @@ class BilyonerScraper(BaseScraper):
                     # Wait for meaningful content (MS 1 or Header)
                     if self.page.locator("div:has-text('MS 1')").count() > 0:
                         loaded = True
+                        logger.info("Page loaded successfully (content found).")
                         break
+                    logger.warning("Content not found, reloading...")
                     self.page.reload()
-                except: pass
-            if not loaded: return []
+                except Exception as e:
+                    logger.error(f"Page load error (attempt {attempt+1}): {e}")
+            
+            if not loaded:
+                logger.error("Failed to load page content after retries.")
+                return []
 
             # 2. STREAM BASED SCRAPING (Capture All, Filter Later)
             global_events = [] 
@@ -74,16 +87,16 @@ class BilyonerScraper(BaseScraper):
                     center_x = vp['width'] / 2
                     center_y = vp['height'] / 2
                     self.page.mouse.click(center_x, center_y)
-                    print(f"Clicked center at ({center_x}, {center_y}) to focus.")
+                    logger.debug(f"Clicked center at ({center_x}, {center_y}) to focus.")
                     
                     # Optional: specific click on a match row if reachable to ensure focus matches
                     # self.page.click("div:has-text('MS 1')") 
             except Exception as e:
-                print(f"Focus warning: {e}")
+                logger.warning(f"Focus warning: {e}")
 
             # SCROLL LOOP - Deep scan
             max_scrolls = 200 # PageDown covers more ground, so fewer steps needed
-            print("Starting scroll capture (Keyboard PageDown)...")
+            logger.info("Starting scroll capture (Keyboard PageDown)...")
             
             for i in range(max_scrolls):
                 # Grab visible text blocks
@@ -115,7 +128,10 @@ class BilyonerScraper(BaseScraper):
                 self.page.keyboard.press("PageDown")
                 time.sleep(0.5)
                 
-            print(f"Captured {len(global_events)} raw events. Processing stream...")
+                if i % 20 == 0:
+                    logger.debug(f"Scroll step {i}/{max_scrolls}, events captured so far: {len(global_events)}")
+                
+            logger.info(f"Captured {len(global_events)} raw events. Processing stream...")
             
             # 3. PYTHON STREAM PROCESSING
             # Candidates keyed by Away Team (Last Write Wins if Cleaner)
@@ -258,11 +274,11 @@ class BilyonerScraper(BaseScraper):
                                 candidates[away] = match_obj
 
             matches = list(candidates.values())
-            print(f"Total Matches Extracted: {len(matches)}")
+            logger.info(f"Total Matches Extracted: {len(matches)}")
             return matches
 
         except Exception as e:
-            print(f"Fatal Error: {e}")
+            logger.error(f"Fatal Scraper Error: {e}", exc_info=True)
             return []
         finally:
             if self.playwright: self.playwright.stop()
