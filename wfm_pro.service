@@ -1,0 +1,13 @@
+[Unit]
+Description=Wizard Football Organization - WFM Pro (Docker)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+WorkingDirectory=/home/ubuntu/wizard-scrap/web_app
+ExecStart=/usr/local/bin/docker-compose -f docker-compose.yml up --build --remove-orphans
+ExecStop=/usr/local/bin/docker-compose -f docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target
