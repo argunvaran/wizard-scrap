@@ -58,10 +58,10 @@ class ScraperManager:
         scraper = EnglandStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
-    def scrape_england_fixtures(self, url=None):
-        logger.info("Starting England Fixtures scrape...")
+    def scrape_england_fixtures(self, url=None, season=2025):
+        logger.info(f"Starting England Fixtures scrape (URL: {url}, Season: {season})...")
         scraper = EnglandFixturesScraper()
-        return scraper.scrape(url) if url else scraper.scrape()
+        return scraper.scrape(url, season=season)
 
     def scrape_england_teams(self, url=None):
         logger.info("Starting England Teams scrape...")
@@ -83,10 +83,10 @@ class ScraperManager:
         scraper = SpainStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
-    def scrape_spain_fixtures(self, url=None):
-        logger.info("Starting Spain Fixtures scrape...")
+    def scrape_spain_fixtures(self, url=None, season=2025):
+        logger.info(f"Starting Spain Fixtures scrape (URL: {url}, Season: {season})...")
         scraper = SpainFixturesScraper()
-        return scraper.scrape(url) if url else scraper.scrape()
+        return scraper.scrape(url, season=season)
         
     def scrape_spain_squads(self, url=None):
         # Auto-run link extractor first for reliability
@@ -106,11 +106,11 @@ class ScraperManager:
         scraper = ItalyStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
-    def scrape_italy_fixtures(self, url=None):
+    def scrape_italy_fixtures(self, url=None, season=2025):
         from scraper.countries.italy.fixtures import ItalyFixturesScraper
-        logger.info("Starting Italy Fixtures scrape...")
+        logger.info(f"Starting Italy Fixtures scrape (URL: {url}, Season: {season})...")
         scraper = ItalyFixturesScraper()
-        return scraper.scrape(url) if url else scraper.scrape()
+        return scraper.scrape(url, season=season)
         
     def scrape_italy_squads(self, url=None):
         from scraper.countries.italy.team_links import ItalyTeamLinksScraper
