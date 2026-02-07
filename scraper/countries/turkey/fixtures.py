@@ -22,6 +22,9 @@ class TurkeyFixturesScraper(BaseScraper):
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
             )
             
+            # Optimization: Block images and fonts
+            page.route("**/*.{png,jpg,jpeg,svg,css,woff,woff2}", lambda route: route.abort())
+            
             # 1. Navigate
             logger.info("Navigating to URL...") 
             page.goto(url, timeout=60000)
