@@ -1,3 +1,4 @@
+import logging
 from scraper.countries.turkey.standings import TurkeyStandingsScraper
 from scraper.countries.turkey.fixtures import TurkeyFixturesScraper
 from scraper.countries.turkey.teams import TurkeyTeamsScraper
@@ -15,6 +16,8 @@ from scraper.countries.spain.fixtures import SpainFixturesScraper
 from scraper.countries.spain.team_links import SpainTeamLinksScraper
 from scraper.countries.spain.squads import SpainSquadsScraper
 
+logger = logging.getLogger('scraper')
+
 class ScraperManager:
     """
     Pure Scraper Manager.
@@ -26,71 +29,86 @@ class ScraperManager:
 
     # --- TURKEY ---
     def scrape_turkey_standings(self, url=None):
+        logger.info("Starting Turkey Standings scrape...")
         scraper = TurkeyStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_turkey_fixtures(self, url=None):
+        logger.info("Starting Turkey Fixtures scrape...")
         scraper = TurkeyFixturesScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_turkey_teams(self, url=None):
+        logger.info("Starting Turkey Teams scrape...")
         scraper = TurkeyTeamsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_turkey_team_links(self, url=None):
+        logger.info("Starting Turkey Team Links scrape...")
         scraper = TurkeyTeamLinksScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_turkey_squads(self, url=None):
+        logger.info("Starting Turkey Squads scrape...")
         return TurkeySquadsScraper().scrape()
 
     # --- ENGLAND ---
     def scrape_england_standings(self, url=None):
+        logger.info("Starting England Standings scrape...")
         scraper = EnglandStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_england_fixtures(self, url=None):
+        logger.info("Starting England Fixtures scrape...")
         scraper = EnglandFixturesScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_england_teams(self, url=None):
+        logger.info("Starting England Teams scrape...")
         scraper = EnglandTeamsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_england_team_links(self, url=None):
+        logger.info("Starting England Team Links scrape...")
         scraper = EnglandTeamLinksScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_england_squads(self, url=None):
+        logger.info("Starting England Squads scrape...")
         return EnglandSquadsScraper().scrape()
 
     # --- SPAIN ---
     def scrape_spain_standings(self, url=None):
+        logger.info("Starting Spain Standings scrape...")
         scraper = SpainStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_spain_fixtures(self, url=None):
+        logger.info("Starting Spain Fixtures scrape...")
         scraper = SpainFixturesScraper()
         return scraper.scrape(url) if url else scraper.scrape()
         
     def scrape_spain_squads(self, url=None):
         # Auto-run link extractor first for reliability
-        print("Ensuring Spain team links exist...")
+        logger.info("Ensuring Spain team links exist...")
         try:
             SpainTeamLinksScraper().scrape()
         except Exception as e:
-            print(f"Warning: Link extraction failed: {e}")
+            logger.warning(f"Warning: Link extraction failed: {e}")
         
+        logger.info("Starting Spain Squads scrape...")
         return SpainSquadsScraper().scrape()
 
     # --- ITALY ---
     def scrape_italy_standings(self, url=None):
         from scraper.countries.italy.standings import ItalyStandingsScraper
+        logger.info("Starting Italy Standings scrape...")
         scraper = ItalyStandingsScraper()
         return scraper.scrape(url) if url else scraper.scrape()
 
     def scrape_italy_fixtures(self, url=None):
         from scraper.countries.italy.fixtures import ItalyFixturesScraper
+        logger.info("Starting Italy Fixtures scrape...")
         scraper = ItalyFixturesScraper()
         return scraper.scrape(url) if url else scraper.scrape()
         
@@ -98,18 +116,19 @@ class ScraperManager:
         from scraper.countries.italy.team_links import ItalyTeamLinksScraper
         from scraper.countries.italy.squads import ItalySquadsScraper
         
-        print("Ensuring Italy team links exist...")
+        logger.info("Ensuring Italy team links exist...")
         try:
             ItalyTeamLinksScraper().scrape()
         except Exception as e:
-            print(f"Warning: Link extraction failed: {e}")
+            logger.warning(f"Warning: Link extraction failed: {e}")
         
+        logger.info("Starting Italy Squads scrape...")
         return ItalySquadsScraper().scrape()
 
     def scrape_bilyoner(self, url=None):
         from scraper.bilyoner import BilyonerScraper
-        return BilyonerScraper().scrape()
+        logger.info("Starting Bilyoner scrape...")
+        return BilyonerScraper().scrape(url)
         
     def close(self):
         pass
-
