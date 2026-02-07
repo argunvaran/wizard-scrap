@@ -23,11 +23,13 @@ def _get_country_code(country_name):
 
 # --- GENERIC FETCH FUNCTIONS ---
 
-def fetch_standings(country):
+def fetch_standings(country, **kwargs):
     engine = ScraperManager()
     data = []
     try:
-        url = None
+        url = kwargs.get('url') # Can be None
+        # Other potential kwargs
+        
         if country == 'turkey': data = engine.scrape_turkey_standings(url)
         elif country == 'england': data = engine.scrape_england_standings(url)
         elif country == 'spain': data = engine.scrape_spain_standings(url)
@@ -39,12 +41,17 @@ def fetch_standings(country):
     finally:
         engine.close()
 
-def fetch_fixtures(country):
+def fetch_fixtures(country, **kwargs):
     engine = ScraperManager()
     data = []
     try:
-        url = None
-        if country == 'turkey': data = engine.scrape_turkey_fixtures(url)
+        url = kwargs.get('url')
+        season = kwargs.get('season')
+        
+        # Pass both url and season if applicable
+        # Only Turkey supports season explicitly so far, others just take URL
+        if country == 'turkey': 
+            data = engine.scrape_turkey_fixtures(url=url, season=season)
         elif country == 'england': data = engine.scrape_england_fixtures(url)
         elif country == 'spain': data = engine.scrape_spain_fixtures(url)
         elif country == 'italy': data = engine.scrape_italy_fixtures(url)
@@ -55,11 +62,11 @@ def fetch_fixtures(country):
     finally:
         engine.close()
 
-def fetch_squads(country):
+def fetch_squads(country, **kwargs):
     engine = ScraperManager()
     data = []
     try:
-        url = None
+        url = kwargs.get('url')
         if country == 'turkey': data = engine.scrape_turkey_squads(url)
         elif country == 'england': data = engine.scrape_england_squads(url)
         elif country == 'spain': data = engine.scrape_spain_squads(url)

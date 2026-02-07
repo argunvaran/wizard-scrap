@@ -233,12 +233,21 @@ def fetch_data_view(request, country, data_type):
     
     # Map to fetch function
     data = []
+    
+    # Extract optional params
+    season = request.GET.get('season')
+    url = request.GET.get('url') # Allow full URL override
+    
+    kwargs = {}
+    if season: kwargs['season'] = season
+    if url: kwargs['url'] = url
+
     if data_type == 'standings':
-        data = fetch_standings(country)
+        data = fetch_standings(country, **kwargs)
     elif data_type == 'fixtures':
-        data = fetch_fixtures(country)
+        data = fetch_fixtures(country, **kwargs)
     elif data_type == 'squads':
-        data = fetch_squads(country)
+        data = fetch_squads(country, **kwargs)
     else:
         messages.error(request, f"Bilinmeyen veri tipi: {data_type}")
         return redirect('automation_dashboard')
