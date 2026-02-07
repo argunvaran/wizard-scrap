@@ -22,10 +22,11 @@ RUN playwright install chromium
 RUN playwright install-deps
 
 # Copy project
-# Copy project (Already includes scripts/entrypoint.sh)
+# Copy project
 COPY . /app/
 
 # Make entrypoint script executable
+COPY ./scripts/entrypoint.sh /app/scripts/entrypoint.sh
 RUN chmod +x /app/scripts/entrypoint.sh
 
 # Entrypoint
