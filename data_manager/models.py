@@ -77,7 +77,6 @@ class BilyonerBulletin(BaseLeagueModel):
     ms_x = models.CharField(max_length=10, default="-")
     ms_2 = models.CharField(max_length=10, default="-")
     under_2_5 = models.CharField(max_length=10, default="-")
-    under_2_5 = models.CharField(max_length=10, default="-")
     over_2_5 = models.CharField(max_length=10, default="-")
     
     # AI Cache
