@@ -143,6 +143,9 @@ def save_fixtures(country, data):
             Fixture.objects.bulk_create(objects)
         return True, f"Saved {len(objects)} fixtures for {country}."
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"CRITICAL SAVE ERROR: {e}")
         return False, str(e)
 
 def save_squads(country, data):
