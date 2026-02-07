@@ -17,11 +17,17 @@ class BilyonerScraper(BaseScraper):
                 "--disable-dev-shm-usage",
                 "--disable-extensions",
                 "--disable-gpu",
+                "--disable-setuid-sandbox",
+                "--no-zygote",
+                "--single-process",
                 "--window-size=1920,1080",
             ]
-            # Check environment for HEADLESS mode (default to True in production)
-            is_headless = os.getenv('HEADLESS', 'True').lower() == 'true'
-            self.browser = self.playwright.chromium.launch(headless=is_headless, args=args, channel="chrome")
+            # Force HEADLESS in production to avoid "Missing X server" error
+            # We can make this conditional later, but for now we need stability.
+            self.browser = self.playwright.chromium.launch(
+                headless=True, 
+                args=args
+            )
             context = self.browser.new_context(
                 viewport={"width": 1920, "height": 1080},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
