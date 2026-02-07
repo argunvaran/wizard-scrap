@@ -19,7 +19,6 @@ media/
 venv/
 env/
 .venv/
-Scripts/
 
 # Playwright
 test-results/
