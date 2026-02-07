@@ -1,12 +1,16 @@
-2026/02/07-19:34:14.502 b14 Reusing MANIFEST C:\Code\web_scraper_0\web_app\bilyoner_bot_session\Default\Local Storage\leveldb/MANIFEST-000001
-2026/02/07-19:34:14.507 b14 Recovering log #112
-2026/02/07-19:34:14.508 b14 Reusing old log C:\Code\web_scraper_0\web_app\bilyoner_bot_session\Default\Local Storage\leveldb/000112.log 
-2026/02/07-19:35:14.514 3098 Level-0 table #117: started
-2026/02/07-19:35:14.542 3098 Level-0 table #117: 61766 bytes OK
-2026/02/07-19:35:14.547 3098 Delete type=0 #112
-2026/02/07-19:36:42.185 b14 Level-0 table #119: started
-2026/02/07-19:36:42.186 3098 Current memtable full; waiting...
-2026/02/07-19:36:42.207 b14 Level-0 table #119: 49918 bytes OK
-2026/02/07-19:36:42.210 b14 Delete type=0 #116
-2026/02/07-19:36:42.214 b14 Level-0 table #121: started
-2026/02/07-19:36:42.226 b14 Level-0 table #121: 28837 bytes OK
+2026/02/08-00:21:51.617 12c8 Reusing MANIFEST C:\Code\web_scraper_0\web_app\bilyoner_bot_session\Default\Local Storage\leveldb/MANIFEST-000001
+2026/02/08-00:21:51.621 12c8 Recovering log #120
+2026/02/08-00:21:51.621 12c8 Level-0 table #123: started
+2026/02/08-00:21:51.631 12c8 Level-0 table #123: 43698 bytes OK
+2026/02/08-00:21:51.631 12c8 Recovering log #122
+2026/02/08-00:21:51.633 12c8 Reusing old log C:\Code\web_scraper_0\web_app\bilyoner_bot_session\Default\Local Storage\leveldb/000122.log 
+2026/02/08-00:21:51.639 12c8 Delete type=0 #120
+2026/02/08-00:21:51.640 5fc Compacting 4@0 + 1@1 files
+2026/02/08-00:21:51.645 5fc Generated table #124@0: 44 keys, 24350 bytes
+2026/02/08-00:21:51.646 5fc Compacted 4@0 + 1@1 files => 24350 bytes
+2026/02/08-00:21:51.648 5fc compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/02/08-00:21:51.648 5fc Delete type=2 #114
+2026/02/08-00:21:51.648 5fc Delete type=2 #117
+2026/02/08-00:21:51.648 5fc Delete type=2 #119
+2026/02/08-00:21:51.648 5fc Delete type=2 #121
+2026/02/08-00:21:51.649 5fc Delete type=2 #123
