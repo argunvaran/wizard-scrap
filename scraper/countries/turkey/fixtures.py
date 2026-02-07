@@ -40,11 +40,11 @@ class TurkeyFixturesScraper(BaseScraper):
                 { display: none !important; opacity: 0 !important; pointer-events: none !important; width: 0 !important; height: 0 !important; }
             """)
             
-            # 3. Slow & Deep Scroll (Increased for full league)
-            logger.info("Scrolling slowly to ensure ALL data loads...")
-            for i in range(30): # Increased to 30 to cover full season
+            # 3. Fast Scroll
+            logger.info("Scrolling fast to ensure ALL data loads...")
+            for i in range(30): 
                 page.mouse.wheel(0, 800)
-                time.sleep(1.2) # Faster but more steps
+                time.sleep(0.5) # Reduced for speed (was 1.2s)
             
             # 4. Parse content
             logger.info("Parsing fixture tables...")
