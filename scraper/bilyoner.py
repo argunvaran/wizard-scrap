@@ -44,7 +44,8 @@ class BilyonerScraper(BaseScraper):
                 viewport={"width": 1920, "height": 1080},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
                 locale="tr-TR",
-                timezone_id="Europe/Istanbul"
+                timezone_id="Europe/Istanbul",
+                ignore_https_errors=True
             )
             
             # Stealth script injection
@@ -53,8 +54,8 @@ class BilyonerScraper(BaseScraper):
             self.page = context.new_page()
             
             # Allow longer timeouts for AWS (limited resources)
-            self.page.set_default_timeout(120000)
-            self.page.set_default_navigation_timeout(120000)
+            self.page.set_default_timeout(60000)
+            self.page.set_default_navigation_timeout(60000)
             
     def scrape(self, custom_url=None):
         # User specified filtered URL for Multiple Leagues (Turkey, England, Italy, Spain)
@@ -73,11 +74,13 @@ class BilyonerScraper(BaseScraper):
                     logger.debug(f"Page load attempt {attempt + 1} ({current_url})")
                     
                     try:
-                        self.page.goto(current_url, wait_until="networkidle", timeout=90000)
+                        # AWS FIX: 'networkidle' is too strict and times out often on slow connections.
+                        # We use 'domcontentloaded' and then wait for hydration.
+                        self.page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
                     except Exception as nav_e:
                         logger.warning(f"Navigation Timeout for {current_url}: {nav_e}. Trying to proceed anyway...")
 
-                    time.sleep(10) # 10s Wait for full hydration (AWS might be slow)
+                    time.sleep(15) # 15s Wait for full hydration (Increased for AWS)
                     
                     # Try to accept cookies
                     try: 
