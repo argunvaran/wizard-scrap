@@ -24,7 +24,6 @@ class BilyonerScraper(BaseScraper):
                 "--disable-gpu",
                 "--disable-setuid-sandbox",
                 "--no-zygote",
-                "--single-process",
                 "--window-size=1920,1080",
             ]
             # Force HEADLESS
@@ -73,9 +72,6 @@ class BilyonerScraper(BaseScraper):
                 try:
                     logger.debug(f"Page load attempt {attempt + 1} ({current_url})")
                     
-                    # ENABLE RESOURCES: Removing the block logic to ensure full SPA hydration
-                    # self.page.route("**/*.{png,jpg,jpeg,svg,woff,woff2,gif,webp}", lambda route: route.abort())
-                    
                     try:
                         self.page.goto(current_url, wait_until="networkidle", timeout=90000)
                     except Exception as nav_e:
@@ -98,7 +94,19 @@ class BilyonerScraper(BaseScraper):
                         break
                     
                     # Fallback Logic: Try Base URL on failure
-                    logger.warning(f"Content missing on {current_url}. Page Title: {self.page.title()}")
+                    page_title = self.page.title()
+                    logger.warning(f"Content missing on {current_url}. Page Title: {page_title}")
+                    
+                    # Debug Screenshot
+                    try:
+                        os.makedirs("media", exist_ok=True)
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        screenshot_path = f"media/debug_screenshot_{timestamp}.png"
+                        self.page.screenshot(path=screenshot_path)
+                        logger.info(f"Saved debug screenshot to {screenshot_path}")
+                    except Exception as sc_e:
+                        logger.warning(f"Could not save screenshot: {sc_e}")
+
                     if not loaded and attempt == 1:
                         logger.info("Switching to BASE URL as fallback...")
                         current_url = "https://www.bilyoner.com/iddaa/futbol"
