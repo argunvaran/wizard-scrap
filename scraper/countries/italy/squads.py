@@ -46,13 +46,24 @@ class ItalySquadsScraper(BaseScraper):
                     
                 logger.info(f"[{i+1}/{len(teams)}] Scraping squad for {team_name}...")
                 
-                # Fail-Open Navigation: If timeout occurs, we try to scrape anyway provided the page didn't crash
+                # Granular Navigation Strategy for Italy (Prevents 5-min hangs)
                 try:
-                    self.navigate(url, timeout=120000)
+                    # 1. Fast Connection (wait_until='commit') - 30s timeout
+                    logger.debug(f"   -> Connecting to {url}...")
+                    self.page.goto(url, timeout=30000, wait_until="commit")
+                    
+                    # 2. Hybrid Wait (DOM or Table) - 60s timeout
+                    logger.debug("   -> Waiting for content...")
+                    try:
+                        self.page.wait_for_load_state("domcontentloaded", timeout=60000)
+                    except Exception:
+                        logger.warning("   -> DOM Load timed out, checking for table immediately...")
+                        
                 except Exception as nav_e:
-                    logger.warning(f"Navigation Warning for {team_name}: {nav_e}. Attempting to read content anyway...")
-                
-                # Wait for table
+                    logger.error(f"   -> Connection failed completely: {nav_e}")
+                    continue # Skip to next team if we can't even connect
+
+                # 3. Target Element Wait
                 try:
                     self.page.wait_for_selector("table", timeout=10000)
                 except:
