@@ -12,6 +12,8 @@ services:
       - media_volume:/app/media
     ports:
       - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
     env_file:
       - .env.prod
 

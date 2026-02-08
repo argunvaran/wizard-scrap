@@ -183,6 +183,11 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": True,
         },
+        "automation": {  # For runner and views
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
         "django": {
             "handlers": ["console"],
             "level": "INFO",
