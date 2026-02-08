@@ -1,44 +1,30 @@
-import json
-import os
-import time
-from scraper.base import BaseScraper
+from django.conf import settings
 
 class TurkeySquadsScraper(BaseScraper):
     def scrape(self):
-        # Dynamic path handling for AWS/Local compatibility
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        # If in docker /app structure, adjust if needed. Better to use relative from project root if possible.
-        # But safest is to look at where the data folder is.
-        
-        # Taking "data" folder at root of workspace
-        data_dir = os.path.join(base_dir, "data")
-        # In docker, it might be mapped differently, but let's try standard relative first.
-        
-        # Fallback for when running from 'web_app' folder context
-        if not os.path.exists(data_dir):
-             data_dir = os.path.join(os.getcwd(), "..", "data")
-             
-        # Fallback 2: Direct absolute for Windows dev, but logic above should cover it.
-        # To be safe for AWS (where /app is root?), we should check generic locations.
-        
-        links_filename = "turkey_team_links.json"
-        
-        # Search strategy
-        possible_paths = [
-            os.path.join(data_dir, links_filename),
-            os.path.join(os.getcwd(), "data", links_filename),
-            "/app/data/" + links_filename,
-            "c:/Code/web_scraper_0/data/" + links_filename
-        ]
-        
-        links_path = None
-        for p in possible_paths:
-            if os.path.exists(p):
-                links_path = p
-                break
-        
-        if not links_path:
-            logger.error("No team links file found. Please run the link extractor first.")
+        # Robust path finding using Django settings
+        try:
+            base_dir = settings.BASE_DIR
+            data_dir = os.path.join(base_dir, 'data')
+            links_filename = "turkey_team_links.json"
+            links_path = os.path.join(data_dir, links_filename)
+            
+            logger.info(f"Looking for team links at: {links_path}")
+            
+            if not os.path.exists(links_path):
+                # Fallback: check if 'web_app' is missing from base_dir (e.g. if settings is in inner folder)
+                # But settings.BASE_DIR is usually root of project (web_app)
+                logger.error(f"Team links file NOT found at: {links_path}")
+                
+                 # Emergency check current dir
+                cwd_path = os.path.join(os.getcwd(), 'data', links_filename)
+                logger.info(f"Checking CWD fallback: {cwd_path}")
+                if os.path.exists(cwd_path):
+                    links_path = cwd_path
+                else:
+                    return []
+        except Exception as e:
+            logger.error(f"Error determining data path: {e}")
             return []
             
         with open(links_path, "r", encoding="utf-8") as f:
