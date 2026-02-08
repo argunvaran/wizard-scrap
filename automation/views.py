@@ -41,7 +41,8 @@ def dashboard(request):
         return render(request, 'automation/dashboard.html', {
             'workflows': workflows,
             'recent_logs': recent_logs,
-            'data_tasks': data_tasks
+            'data_tasks': data_tasks,
+            'show_update_button': request.user.is_superuser
         })
     except Exception as e:
         logger.exception(f"CRITICAL DASHBOARD ERROR: {e}")
