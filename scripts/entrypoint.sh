@@ -13,7 +13,12 @@ then
 fi
 
 # Apply database migrations
+# Apply database migrations
 python manage.py migrate --noinput
+
+# Create Superuser (if not exists)
+echo "Ensuring superuser exists..."
+python manage.py shell < /app/scripts/create_superuser.py
 
 # Collect static files
 python manage.py collectstatic --noinput
