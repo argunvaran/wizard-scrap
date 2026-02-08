@@ -107,6 +107,7 @@
         }
     </style>
 
+    {% if request.user.is_superuser %}
     <!-- Shortcuts Section -->
     <div class="row">
         <div class="col-md-8 mb-4">
@@ -250,6 +251,17 @@
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <div class="alert alert-info shadow-sm" role="alert">
+        <h4 class="alert-heading"><i class="fas fa-lock me-2"></i>Yetkisiz Erişim Kısıtlaması</h4>
+        <p>
+            Scraper ve veri çekme modülleri sadece yönetici yetkisine sahip kullanıcılar tarafından görüntülenebilir.
+            Şu an sadece sistem durumunu ve logları görüntüleyebilirsiniz.
+        </p>
+        <hr>
+        <p class="mb-0">İşlem yapmak için lütfen yönetici hesabıyla giriş yapınız.</p>
+    </div>
+    {% endif %}
 
     <!-- Recent Logs -->
     <div class="row mt-4">
