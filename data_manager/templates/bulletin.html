@@ -21,6 +21,40 @@
                 </div>
             </form>
         </div>
+
+        {% if show_update_button %}
+        <!-- Admin-Only Scrape Trigger -->
+        <div class="card p-3 shadow-sm mt-3 bg-light border-warning">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="mb-1 text-dark"><i class="bi bi-robot"></i> Bilyoner Güncelleyici</h5>
+                    <small class="text-muted">Veriler arka planda Bilyoner'den çekilir. (1-2 dk sürer)</small>
+                </div>
+                <div>
+                    <form action="{% url 'run_web_scraper' %}" method="post" id="scrapeForm">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success fw-bold shadow-sm">
+                            <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"
+                                id="loadingSpinner"></span>
+                            <i class="bi bi-arrow-clockwise"></i> BÜLTENİ GÜNCELLE
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById('scrapeForm').addEventListener('submit', function () {
+                var btn = this.querySelector('button');
+                var spinner = document.getElementById('loadingSpinner');
+                btn.classList.add('disabled');
+                btn.innerHTML = 'İşlem Başlatılıyor...';
+                btn.prepend(spinner);
+                spinner.classList.remove('d-none');
+            });
+        </script>
+        {% endif %}
+
     </div>
 </div>
 
@@ -57,10 +91,12 @@
                         </td>
                         <td class="small">{{ match.league }}</td>
                         <td class="fw-bold">{{ match.match_time }}</td>
-                        <td class="text-end pe-3 {% if match.ms_1 < match.ms_2 %}fw-bold{% endif %}">{{ match.home_team }}</td>
-                            
-                        <td class="text-start ps-3 {% if match.ms_2 < match.ms_1 %}fw-bold{% endif %}">{{ match.away_team }}</td>
-                            
+                        <td class="text-end pe-3 {% if match.ms_1 < match.ms_2 %}fw-bold{% endif %}">{{ match.home_team
+                            }}</td>
+
+                        <td class="text-start ps-3 {% if match.ms_2 < match.ms_1 %}fw-bold{% endif %}">{{
+                            match.away_team }}</td>
+
 
                         <!-- Odds -->
                         <td class="text-center table-warning fw-bold">{{ match.ms_1 }}</td>

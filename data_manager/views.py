@@ -119,7 +119,8 @@ def bulletin(request):
     context = {
         'form': form,
         'matches': queryset,
-        'selected_country': selected_country
+        'selected_country': selected_country,
+        'show_update_button': request.user.is_superuser
     }
     return render(request, 'bulletin.html', context)
 
