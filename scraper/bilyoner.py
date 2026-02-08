@@ -77,12 +77,25 @@ class BilyonerScraper(BaseScraper):
 
             # STEP 2: Navigate to Target
             logger.info(f"Step 2: Navigating to Target URL: {target_url}")
-            response = self.page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
-            
-            # Check Status
-            if response and response.status >= 400:
-                logger.error(f"Target URL returned error status: {response.status}")
-                return []
+            try:
+                response = self.page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
+            except Exception as e:
+                logger.warning(f"Target navigation failed: {e}")
+                response = None
+
+            # Check Status & Fallback logic
+            if not response or response.status >= 400:
+                status_code = response.status if response else "N/A"
+                logger.warning(f"Target URL returned error status: {status_code}. Switching to FALLBACK URL...")
+                
+                # Fallback to generic football page
+                fallback_url = "https://www.bilyoner.com/iddaa/futbol"
+                logger.info(f"Navigating to Fallback: {fallback_url}")
+                response = self.page.goto(fallback_url, wait_until="domcontentloaded", timeout=60000)
+                
+                if response and response.status >= 400:
+                    logger.error(f"Fallback URL also failed with status: {response.status}")
+                    return []
 
             # STEP 3: Wait for Content & Simulate Human
             logger.info("Step 3: Waiting for content hydration...")
