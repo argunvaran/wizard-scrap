@@ -252,8 +252,8 @@ def fetch_data_view(request, country, data_type):
             task = Task.objects.filter(name=task_name).first()
             
             # Auto-heal: If task missing from DB but exists in Code Registry, create it.
+            # TASK_REGISTRY is imported at top level now
             if not task and task_name in TASK_REGISTRY:
-                from automation.services import TASK_REGISTRY # Ensure import
                 try:
                     task = Task.objects.create(
                         name=task_name,
@@ -261,7 +261,7 @@ def fetch_data_view(request, country, data_type):
                         function_path=f"automation.services.{task_name}"
                     )
                 except Exception as e:
-                    print(f"Error auto-creating task {task_name}: {e}")
+                    logger.error(f"Error auto-creating task {task_name}: {e}")
 
             if task:
                 def run_thread():
