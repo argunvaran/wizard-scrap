@@ -16,32 +16,37 @@ def dashboard(request):
     Main Data Control Center Dashboard.
     Groups tasks by country and displays status.
     """
-    workflows = Workflow.objects.filter(is_active=True)
-    recent_logs = TaskLog.objects.all().order_by('-created_at')[:10]
-    
-    # Organize Sync Tasks by Country
-    countries = ['Turkey', 'England', 'Spain', 'Italy']
-    data_tasks = {}
-    
-    for country in countries:
-        c_lower = country.lower()
-        # Find tasks by name convention defined in registry
-        # We need to ensure tasks are synced first (sync_tasks run at least once)
-        t_standings = Task.objects.filter(name=f'sync_{c_lower}_standings').first()
-        t_fixtures = Task.objects.filter(name=f'sync_{c_lower}_fixtures').first()
-        t_squads = Task.objects.filter(name=f'sync_{c_lower}_squads').first()
+    try:
+        workflows = Workflow.objects.filter(is_active=True)
+        recent_logs = TaskLog.objects.all().order_by('-created_at')[:10]
         
-        data_tasks[country] = {
-            'standings': t_standings,
-            'fixtures': t_fixtures,
-            'squads': t_squads,
-        }
+        # Organize Sync Tasks by Country
+        countries = ['Turkey', 'England', 'Spain', 'Italy']
+        data_tasks = {}
         
-    return render(request, 'automation/dashboard.html', {
-        'workflows': workflows,
-        'recent_logs': recent_logs,
-        'data_tasks': data_tasks
-    })
+        for country in countries:
+            c_lower = country.lower()
+            # Find tasks by name convention defined in registry
+            # We need to ensure tasks are synced first (sync_tasks run at least once)
+            t_standings = Task.objects.filter(name=f'sync_{c_lower}_standings').first()
+            t_fixtures = Task.objects.filter(name=f'sync_{c_lower}_fixtures').first()
+            t_squads = Task.objects.filter(name=f'sync_{c_lower}_squads').first()
+            
+            data_tasks[country] = {
+                'standings': t_standings,
+                'fixtures': t_fixtures,
+                'squads': t_squads,
+            }
+            
+        return render(request, 'automation/dashboard.html', {
+            'workflows': workflows,
+            'recent_logs': recent_logs,
+            'data_tasks': data_tasks
+        })
+    except Exception as e:
+        logger.exception(f"CRITICAL DASHBOARD ERROR: {e}")
+        from django.http import HttpResponse
+        return HttpResponse(f"<h1>Dashboard Error</h1><pre>{str(e)}</pre>", status=500)
 
 def task_run_direct(request, pk):
     """
