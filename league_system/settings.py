@@ -176,6 +176,14 @@ LOGGING = {
             "backupCount": 10,
             "formatter": "verbose",
         },
+        "django_file": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django_error.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
     },
     "loggers": {
         "scraper": {  # Use this logger name in your scraper scripts
@@ -189,7 +197,7 @@ LOGGING = {
             "propagate": True,
         },
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "django_file"],
             "level": "INFO",
         },
     },
