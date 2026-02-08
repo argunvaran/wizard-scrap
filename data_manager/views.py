@@ -96,7 +96,7 @@ def listings(request, data_type):
         'data_type': data_type,
         'items': queryset,
         'selected_country': selected_country,
-        'user': request.user  # Explicitly pass user
+        'show_update_button': request.user.is_superuser  # Pass simple boolean
     }
     return render(request, template_name, context)
 
