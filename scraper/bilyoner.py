@@ -8,12 +8,14 @@ from playwright.sync_api import sync_playwright
 
 import logging
 
+
 logger = logging.getLogger('scraper')
+logger.setLevel(logging.DEBUG)
 
 class BilyonerScraper(BaseScraper):
     def start_browser(self):
         if not self.playwright:
-            logger.info("Initializing Playwright and Browser (AWS Optimized)...")
+            logger.info("Initializing Playwright and Browser (AWS DEBUG Mode)...")
             self.playwright = sync_playwright().start()
             
             # Minimal, Stealthy Args
@@ -30,19 +32,20 @@ class BilyonerScraper(BaseScraper):
                 "--mute-audio",
             ]
             
-            self.browser = self.playwright.chromium.launch(
-                headless=True, 
             # NEW HEADLESS MODE (The "Magic" Switch)
             # --headless=new renders exactly like a headful browser, bypassing old WAF checks.
-            # We pass headless=False to Playwright but force the arg.
             args.extend([
                 "--headless=new" 
             ])
+            
+            logger.debug(f"Launching browser with args: {args}")
 
             self.browser = self.playwright.chromium.launch(
                 headless=False, # We manage headless via args for 'new' mode
                 args=args
             )
+            
+            logger.debug("Browser launched successfully.")
             
             # Organic Context
             context = self.browser.new_context(
