@@ -243,12 +243,31 @@ def fetch_data_view(request, country, data_type):
     if url: kwargs['url'] = url
 
     try:
-        if data_type == 'standings':
+        if data_type == 'squads':
+            # SQUADS: Run in Background (Too slow for sync HTTP -> 504 Timeout)
+            task_name = f"sync_{country}_squads"
+            task = Task.objects.filter(name=task_name).first()
+            
+            if task:
+                def run_thread():
+                    connection.close()  # Ensure clean DB connection
+                    execute_single_task(task.pk)
+                    connection.close()
+                
+                t = threading.Thread(target=run_thread)
+                t.start()
+                
+                messages.success(request, f"{country.title()} Squads scraping started in BACKGROUND. Check logs for progress.")
+                return redirect('automation_dashboard')
+            else:
+                messages.error(request, f"Background task '{task_name}' not found. Please sync tasks.")
+                return redirect('automation_dashboard')
+
+        # STANDINGS / FIXTURES: Keep Synchronous (Fast enough for Preview)
+        elif data_type == 'standings':
             data = fetch_standings(country, **kwargs)
         elif data_type == 'fixtures':
             data = fetch_fixtures(country, **kwargs)
-        elif data_type == 'squads':
-            data = fetch_squads(country, **kwargs)
         else:
             messages.error(request, f"Bilinmeyen veri tipi: {data_type}")
             return redirect('automation_dashboard')
