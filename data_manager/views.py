@@ -95,7 +95,8 @@ def listings(request, data_type):
         'form': form,
         'data_type': data_type,
         'items': queryset,
-        'selected_country': selected_country
+        'selected_country': selected_country,
+        'user': request.user  # Explicitly pass user
     }
     return render(request, template_name, context)
 
