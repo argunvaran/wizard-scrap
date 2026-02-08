@@ -31,7 +31,7 @@ class EnglandSquadsScraper(BaseScraper):
         with open(links_path, "r", encoding="utf-8") as f:
             teams = json.load(f)
             
-        print(f"Loaded {len(teams)} teams. Starting squad scrape...")
+        logger.info(f"Loaded {len(teams)} teams. Starting squad scrape...")
         
         flat_data = [] 
         
@@ -45,18 +45,18 @@ class EnglandSquadsScraper(BaseScraper):
                 if not url: 
                     continue
                     
-                print(f"[{i+1}/{len(teams)}] Scraping squad for {team_name}...")
+                logger.info(f"[{i+1}/{len(teams)}] Scraping squad for {team_name}...")
                 try:
-                    self.page.goto(url, timeout=60000)
+                    self.page.goto(url, timeout=120000)
                 except:
-                    print(f"   -> Timeout loading {url}")
+                    logger.warning(f"   -> Timeout loading {url}")
                     continue
                 
                 # Wait for table
                 try:
                     self.page.wait_for_selector("table", timeout=10000)
                 except:
-                    print(f"   -> No table found for {team_name}")
+                    logger.warning(f"   -> No table found for {team_name}")
                     continue
                 
                 tables = self.page.locator("table").all()

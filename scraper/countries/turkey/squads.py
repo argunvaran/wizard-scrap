@@ -37,7 +37,7 @@ class TurkeySquadsScraper(BaseScraper):
         with open(links_path, "r", encoding="utf-8") as f:
             teams = json.load(f)
             
-        print(f"Loaded {len(teams)} teams. Starting squad scrape...")
+        logger.info(f"Loaded {len(teams)} teams. Starting squad scrape...")
         
         flat_data = [] # List of dicts for DB and UI
         
@@ -51,14 +51,15 @@ class TurkeySquadsScraper(BaseScraper):
                 if not url: 
                     continue
                     
-                print(f"[{i+1}/{len(teams)}] Scraping squad for {team_name}...")
-                self.navigate(url)
+                logger.info(f"[{i+1}/{len(teams)}] Scraping squad for {team_name}...")
+                # Explicitly wait 2 minutes and use domcontentloaded via BaseScraper updates
+                self.navigate(url, timeout=120000)
                 
                 # Wait for table
                 try:
                     self.page.wait_for_selector("table", timeout=5000)
                 except:
-                    print(f"   -> No table found for {team_name}")
+                    logger.warning(f"   -> No table found for {team_name}")
                     continue
                 
                 tables = self.page.locator("table").all()
