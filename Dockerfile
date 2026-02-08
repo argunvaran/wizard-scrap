@@ -11,6 +11,7 @@ WORKDIR /app
 # Install system dependencies (if any additional needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
