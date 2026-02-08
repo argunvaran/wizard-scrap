@@ -52,14 +52,19 @@ class TurkeySquadsScraper(BaseScraper):
                     continue
                     
                 logger.info(f"[{i+1}/{len(teams)}] Scraping squad for {team_name}...")
-                # Explicitly wait 2 minutes and use domcontentloaded via BaseScraper updates
-                self.navigate(url, timeout=120000)
                 
+                # Fail-Open Navigation: If timeout occurs, we try to scrape anyway provided the page didn't crash
+                try:
+                    self.navigate(url, timeout=120000)
+                except Exception as nav_e:
+                    logger.warning(f"Navigation Warning for {team_name}: {nav_e}. Attempting to read content anyway...")
+
                 # Wait for table
                 try:
-                    self.page.wait_for_selector("table", timeout=5000)
+                    # Give it a moment if navigation just timed out
+                    self.page.wait_for_selector("table", timeout=10000)
                 except:
-                    logger.warning(f"   -> No table found for {team_name}")
+                    logger.warning(f"   -> No table found for {team_name} (Skipping)")
                     continue
                 
                 tables = self.page.locator("table").all()
