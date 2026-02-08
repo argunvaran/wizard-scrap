@@ -27,8 +27,15 @@ class BilyonerScraper(BaseScraper):
                 "--single-process",
                 "--window-size=1920,1080",
             ]
-            # Force HEADLESS in production to avoid "Missing X server" error
-            # We can make this conditional later, but for now we need stability.
+            # Force HEADLESS
+            # Add anti-detection args
+            args.extend([
+                "--disable-blink-features",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-web-security",
+                "--allow-running-insecure-content"
+            ])
+            
             self.browser = self.playwright.chromium.launch(
                 headless=True, 
                 args=args
@@ -36,12 +43,19 @@ class BilyonerScraper(BaseScraper):
             logger.info("Browser launched in HEADLESS mode.")
             context = self.browser.new_context(
                 viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
                 locale="tr-TR",
                 timezone_id="Europe/Istanbul"
             )
+            
+            # Stealth script injection
             context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            
             self.page = context.new_page()
+            
+            # Allow longer timeouts for AWS (limited resources)
+            self.page.set_default_timeout(120000)
+            self.page.set_default_navigation_timeout(120000)
             
     def scrape(self, custom_url=None):
         # User specified filtered URL for Multiple Leagues (Turkey, England, Spain, Italy)
@@ -55,10 +69,21 @@ class BilyonerScraper(BaseScraper):
             for attempt in range(3):
                 try:
                     logger.debug(f"Page load attempt {attempt + 1}")
-                    self.page.goto(url, timeout=90000, wait_until="networkidle")
-                    time.sleep(3)
-                    try: self.page.get_by_text("Kabul Et").click(timeout=1000)
+                    
+                    # BLOCK IMAGES/FONTS for Speed
+                    self.page.route("**/*.{png,jpg,jpeg,svg,woff,woff2}", lambda route: route.abort())
+                    
+                    self.page.goto(url, wait_until="domcontentloaded") # Faster than networkidle
+                    time.sleep(5) # Explicit wait for hydration
+                    
+                    # Try to accept cookies (aggressive check)
+                    try: 
+                        self.page.locator("text=Kabul Et").first.click(timeout=2000)
                     except: pass
+                    try:
+                         self.page.locator("#onetrust-accept-btn-handler").click(timeout=2000)
+                    except: pass
+                    
                     
                     # Wait for meaningful content (MS 1 or Header)
                     if self.page.locator("div:has-text('MS 1')").count() > 0:
