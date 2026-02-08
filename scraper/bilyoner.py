@@ -32,28 +32,30 @@ class BilyonerScraper(BaseScraper):
             
             self.browser = self.playwright.chromium.launch(
                 headless=True, 
-            # MOBILE EMULATION (iPhone 13 Pro)
-            # AWS IPs are blocked on Desktop? Try Mobile. 
-            # WAFs often have different rules for specific mobile signatures.
-            device = self.playwright.devices['iPhone 13 Pro']
-            
-            logger.info(f"Browser launching in MOBILE EMULATION MODE: {device['userAgent']}")
+            # NEW HEADLESS MODE (The "Magic" Switch)
+            # --headless=new renders exactly like a headful browser, bypassing old WAF checks.
+            # We pass headless=False to Playwright but force the arg.
+            args.extend([
+                "--headless=new" 
+            ])
 
             self.browser = self.playwright.chromium.launch(
-                headless=True, 
+                headless=False, # We manage headless via args for 'new' mode
                 args=args
             )
             
+            # Organic Context
             context = self.browser.new_context(
-                **device, # Unpack mobile viewport, ua, dpr
+                viewport={"width": 1920, "height": 1080},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36", 
                 locale="tr-TR",
                 timezone_id="Europe/Istanbul",
-                geolocation={"latitude": 41.0082, "longitude": 28.9784},
-                permissions=["geolocation"],
-                ignore_https_errors=True
+                extra_http_headers={
+                    "Referer": "https://www.google.com.tr/"
+                }
             )
             
-            # Stealth script injection (Mobile specific)
+            # Minimal Stealth
             context.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
             """)
