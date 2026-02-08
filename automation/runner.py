@@ -1,8 +1,11 @@
+import logging
 from .models import Workflow, TaskLog
 from .services import TASK_REGISTRY
 import time
 import datetime
 from django.utils import timezone
+
+logger = logging.getLogger('automation')
 
 def execute_workflow(workflow_id):
     """
@@ -12,7 +15,7 @@ def execute_workflow(workflow_id):
         workflow = Workflow.objects.get(pk=workflow_id)
         steps = workflow.steps.all().order_by('order')
         
-        print(f"Executing Workflow: {workflow.name}")
+        logger.info(f"Executing Workflow: {workflow.name}")
         
         execution_start = time.time()
         workflow_log_entries = []
@@ -41,11 +44,11 @@ def execute_workflow(workflow_id):
                 log.duration_seconds = time.time() - task_start
                 log.save()
                 success_overall = False
-                break # Stop workflow on missing task? optional.
+                break 
             
             try:
                 # Execute Task
-                print(f"Running Task: {step.task.name}")
+                logger.info(f"Running Task: {step.task.name}")
                 status, output = task_func() # Expecting (bool, str)
                 
                 log.status = 'SUCCESS' if status else 'FAILED'
@@ -53,16 +56,14 @@ def execute_workflow(workflow_id):
                 
                 if not status:
                     success_overall = False
-                    print(f"Task Failed: {step.task.name}")
-                    # Stop workflow on failure? Let's decide based on user pref later. Default: Continue? No, usually sequence matters.
-                    # e.g. If Scrape fails, Publish should not run.
+                    logger.error(f"Task Failed: {step.task.name}")
                     break 
                     
             except Exception as e:
                 log.status = 'FAILED'
                 log.output = f"Exception: {str(e)}"
                 success_overall = False
-                print(f"Task Exception: {e}")
+                logger.error(f"Task Exception: {e}")
                 break
             finally:
                 log.duration_seconds = time.time() - task_start
@@ -73,11 +74,11 @@ def execute_workflow(workflow_id):
             workflow.next_run = workflow.last_run + datetime.timedelta(minutes=workflow.interval_minutes)
             workflow.save()
             
-        print(f"Workflow '{workflow.name}' Completed. Success: {success_overall}")
+        logger.info(f"Workflow '{workflow.name}' Completed. Success: {success_overall}")
         return success_overall
 
     except Workflow.DoesNotExist:
-        print(f"Workflow {workflow_id} not found.")
+        logger.error(f"Workflow {workflow_id} not found.")
         return False
 
 def execute_single_task(task_id):
@@ -90,7 +91,7 @@ def execute_single_task(task_id):
         task_key = task_model.name
         task_func = TASK_REGISTRY.get(task_key)
         
-        print(f"Executing Single Task: {task_key}")
+        logger.info(f"Executing Single Task: {task_key}")
         
         task_start = time.time()
         
@@ -106,6 +107,7 @@ def execute_single_task(task_id):
             log.output = f"Task function '{task_key}' not found in registry."
             log.duration_seconds = time.time() - task_start
             log.save()
+            logger.error(f"Task function not found in registry: {task_key}")
             return False
             
         try:
@@ -116,6 +118,11 @@ def execute_single_task(task_id):
             log.duration_seconds = time.time() - task_start
             log.save()
             
+            if status:
+                logger.info(f"Task {task_key} SUCCESS. Output len: {len(str(output))}")
+            else:
+                logger.warning(f"Task {task_key} FAILED. Output: {output}")
+            
             return status
             
         except Exception as e:
@@ -123,8 +130,9 @@ def execute_single_task(task_id):
             log.output = f"Exception: {str(e)}"
             log.duration_seconds = time.time() - task_start
             log.save()
+            logger.exception(f"Task Exception in execute_single_task: {e}")
             return False
             
     except Task.DoesNotExist:
-        print(f"Task {task_id} not found.")
+        logger.error(f"Task {task_id} not found.")
         return False

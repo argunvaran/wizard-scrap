@@ -5,7 +5,10 @@ from .runner import execute_workflow, execute_single_task
 
 from .services import TASK_REGISTRY
 import threading
+import logging
 from django.db import connection
+
+logger = logging.getLogger('automation')
 
 
 def dashboard(request):
@@ -262,17 +265,21 @@ def fetch_data_view(request, country, data_type):
 
             if task:
                 def run_thread():
+                    logger_t = logging.getLogger('automation')
+                    logger_t.info(f"THREAD STARTED: {task_name} (ID: {task.pk})")
                     connection.close()  # Ensure clean DB connection
                     # We use a fresh thread execution
                     try:
                         execute_single_task(task.pk)
+                        logger_t.info(f"THREAD COMPLETED: {task_name}")
                     except Exception as e:
-                        print(f"Thread execution failed: {e}")
+                        logger_t.error(f"Thread execution failed for {task_name}: {e}")
                     finally:
                         connection.close()
                 
                 t = threading.Thread(target=run_thread)
                 t.start()
+                logger.info(f"Spawned background thread for {task_name}")
                 
                 messages.success(request, f"{country.title()} Squads scraping started in BACKGROUND. Check logs for progress.")
                 return redirect('automation_dashboard')
