@@ -1,6 +1,7 @@
 
 import os
 import sys
+import logging
 from django.core.management.base import BaseCommand
 from django.conf import settings
 
@@ -10,10 +11,13 @@ sys.path.append(os.path.abspath(os.path.join(settings.BASE_DIR, '..')))
 from scraper.bilyoner import BilyonerScraper
 from data_manager.models import BilyonerBulletinStaging
 
+logger = logging.getLogger('scraper')
+
 class Command(BaseCommand):
     help = 'Scrapes Bilyoner betting bulletin and updates the staging database'
 
     def handle(self, *args, **options):
+        logger.info("COMMAND START: update_bilyoner_bulletin")
         self.stdout.write(self.style.WARNING("Starting Bilyoner Scrape... Only fetching Turkey, England, Spain, Italy."))
         
         # Initialize Scraper
@@ -24,10 +28,14 @@ class Command(BaseCommand):
             matches = scraper.scrape()
             
             if not matches:
-                self.stdout.write(self.style.ERROR("No matches found!"))
+                msg = "No matches found!"
+                self.stdout.write(self.style.ERROR(msg))
+                logger.warning(msg)
                 return
 
-            self.stdout.write(self.style.SUCCESS(f"Found {len(matches)} matches. Updating STAGING database..."))
+            msg = f"Found {len(matches)} matches. Updating STAGING database..."
+            self.stdout.write(self.style.SUCCESS(msg))
+            logger.info(msg)
             
             # Clear Staging Table
             BilyonerBulletinStaging.objects.all().delete()
@@ -51,11 +59,12 @@ class Command(BaseCommand):
                 )
                 count += 1
 
-            self.stdout.write(self.style.SUCCESS(f"Done. Saved {count} matches to Staging Area."))
+            done_msg = f"Done. Saved {count} matches to Staging Area."
+            self.stdout.write(self.style.SUCCESS(done_msg))
+            logger.info(done_msg)
             self.stdout.write(self.style.WARNING("Please review the data at: /scrape-review/ before publishing."))
 
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error during execution: {e}"))
-
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error during execution: {e}"))
+            err_msg = f"Error during execution: {e}"
+            self.stdout.write(self.style.ERROR(err_msg))
+            logger.error(err_msg, exc_info=True)
