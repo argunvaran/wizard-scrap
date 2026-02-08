@@ -5,6 +5,10 @@ FROM mcr.microsoft.com/playwright/python:v1.41.0-jammy
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# Avoid interactive prompts during build (especially for tzdata)
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
 # Set work directory
 WORKDIR /app
 
@@ -22,7 +26,6 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 RUN playwright install chromium
 RUN playwright install-deps
 
-# Copy project
 # Copy project
 COPY . /app/
 
