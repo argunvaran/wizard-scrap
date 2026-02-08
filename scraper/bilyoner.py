@@ -32,38 +32,37 @@ class BilyonerScraper(BaseScraper):
             
             self.browser = self.playwright.chromium.launch(
                 headless=True, 
-            # MINIMAL ARGS - Reduce "Hacker" flags
-            # We remove --disable-web-security as it can trigger WAFs
+            # MOBILE EMULATION (iPhone 13 Pro)
+            # AWS IPs are blocked on Desktop? Try Mobile. 
+            # WAFs often have different rules for specific mobile signatures.
+            device = self.playwright.devices['iPhone 13 Pro']
             
+            logger.info(f"Browser launching in MOBILE EMULATION MODE: {device['userAgent']}")
+
             self.browser = self.playwright.chromium.launch(
                 headless=True, 
                 args=args
             )
             
-            # Natural Context - No forced mismatching headers
             context = self.browser.new_context(
-                viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36", 
+                **device, # Unpack mobile viewport, ua, dpr
                 locale="tr-TR",
                 timezone_id="Europe/Istanbul",
-                # ignore_https_errors=True # Removed to be standard
+                geolocation={"latitude": 41.0082, "longitude": 28.9784},
+                permissions=["geolocation"],
+                ignore_https_errors=True
             )
             
-            # Basic Stealth only
+            # Stealth script injection (Mobile specific)
             context.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
             """)
             
             self.page = context.new_page()
             
-            # ENABLE RESOURCES: Real users load images. WAFs invoke 400 if assets aren't requested.
-            # self.page.route("**/*.{png,jpg...}", lambda route: route.abort()) 
-            
             # Default Timeouts
             self.page.set_default_timeout(60000)
             self.page.set_default_navigation_timeout(60000)
-            
-            logger.info("Browser launched in NATURAL mode (Full Loading).")
 
     def scrape(self, custom_url=None):
         # Simplify URL to basics to avoid Query String encoding 400s
