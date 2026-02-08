@@ -97,3 +97,59 @@ def ask_gemini_analysis(request, unique_key):
         return JsonResponse(result)
         
     return JsonResponse({'success': False, 'error': 'Invalid method'}, status=400)
+
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
+from data_manager.models import BilyonerBulletin
+
+@csrf_exempt
+def receive_external_bulletin(request):
+    """
+    API Endpoint to receive matches from a local scraper (Hybrid Mode).
+    Bypasses AWS IP blocks by allowing the user to scrape locally and push here.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            secret = data.get('secret')
+            
+            # Simple security check (Hardcoded for this user context, normally use env)
+            if secret != "WFM_PRO_2026_SECURE_SYNC":
+                return JsonResponse({"success": False, "error": "Unauthorized"}, status=403)
+                
+            matches = data.get('matches', [])
+            if not matches:
+                return JsonResponse({"success": False, "error": "No matches provided"})
+                
+            # Clear and Insert
+            # Using BilyonerBulletin directly or Staging? Let's use BilyonerBulletin for immediate view
+            # Or better: Update the BilyonerBulletin table directly.
+            
+            BilyonerBulletin.objects.all().delete()
+            
+            bulk_list = []
+            for m in matches:
+                bulk_list.append(BilyonerBulletin(
+                    unique_key=m.get('unique_key'),
+                    country=m.get('country', 'TURKEY'),
+                    league=m.get('league', '-'),
+                    match_date=m.get('match_date', ''),
+                    match_time=m.get('match_time', '00:00'),
+                    home_team=m.get('home_team', 'Unknown'),
+                    away_team=m.get('away_team', 'Unknown'),
+                    ms_1=m.get('ms_1', '-'),
+                    ms_x=m.get('ms_x', '-'),
+                    ms_2=m.get('ms_2', '-'),
+                    under_2_5=m.get('under_2_5', '-'),
+                    over_2_5=m.get('over_2_5', '-')
+                ))
+            
+            BilyonerBulletin.objects.bulk_create(bulk_list)
+            
+            return JsonResponse({"success": True, "count": len(bulk_list)})
+            
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
+            
+    return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
