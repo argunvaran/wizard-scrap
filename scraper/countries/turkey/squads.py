@@ -5,14 +5,41 @@ from scraper.base import BaseScraper
 
 class TurkeySquadsScraper(BaseScraper):
     def scrape(self):
-        links_path = "c:/Code/web_scraper_0/data/turkey_team_links.json"
+        # Dynamic path handling for AWS/Local compatibility
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        # If in docker /app structure, adjust if needed. Better to use relative from project root if possible.
+        # But safest is to look at where the data folder is.
         
-        if not os.path.exists(links_path):
-            # Try generic path if absolute fails
-            links_path = os.path.join(os.getcwd(), "data", "turkey_team_links.json")
-            if not os.path.exists(links_path):
-                print("No team links file found. Please run the link extractor first.")
-                return []
+        # Taking "data" folder at root of workspace
+        data_dir = os.path.join(base_dir, "data")
+        # In docker, it might be mapped differently, but let's try standard relative first.
+        
+        # Fallback for when running from 'web_app' folder context
+        if not os.path.exists(data_dir):
+             data_dir = os.path.join(os.getcwd(), "..", "data")
+             
+        # Fallback 2: Direct absolute for Windows dev, but logic above should cover it.
+        # To be safe for AWS (where /app is root?), we should check generic locations.
+        
+        links_filename = "turkey_team_links.json"
+        
+        # Search strategy
+        possible_paths = [
+            os.path.join(data_dir, links_filename),
+            os.path.join(os.getcwd(), "data", links_filename),
+            "/app/data/" + links_filename,
+            "c:/Code/web_scraper_0/data/" + links_filename
+        ]
+        
+        links_path = None
+        for p in possible_paths:
+            if os.path.exists(p):
+                links_path = p
+                break
+        
+        if not links_path:
+            logger.error("No team links file found. Please run the link extractor first.")
+            return []
             
         with open(links_path, "r", encoding="utf-8") as f:
             teams = json.load(f)
