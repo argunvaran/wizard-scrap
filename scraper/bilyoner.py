@@ -32,88 +32,71 @@ class BilyonerScraper(BaseScraper):
             
             self.browser = self.playwright.chromium.launch(
                 headless=True, 
+            # MINIMAL ARGS - Reduce "Hacker" flags
+            # We remove --disable-web-security as it can trigger WAFs
+            
+            self.browser = self.playwright.chromium.launch(
+                headless=True, 
                 args=args
             )
             
-            # REAL HEADER SPOOFING
-            # AWS IPs are often flagged. We need perfect headers.
-            ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-            
+            # Natural Context - No forced mismatching headers
             context = self.browser.new_context(
                 viewport={"width": 1920, "height": 1080},
-                user_agent=ua,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36", 
                 locale="tr-TR",
                 timezone_id="Europe/Istanbul",
-                ignore_https_errors=True,
-                extra_http_headers={
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                    "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-                    "Cache-Control": "max-age=0",
-                    "Sec-Ch-Ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-                    "Sec-Ch-Ua-Mobile": "?0",
-                    "Sec-Ch-Ua-Platform": '"Windows"',
-                    "Sec-Fetch-Dest": "document",
-                    "Sec-Fetch-Mode": "navigate",
-                    "Sec-Fetch-Site": "none",
-                    "Sec-Fetch-User": "?1",
-                    "Upgrade-Insecure-Requests": "1"
-                }
+                # ignore_https_errors=True # Removed to be standard
             )
             
-            # 1. Advanced Stealth Scripts
+            # Basic Stealth only
             context.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-                Object.defineProperty(navigator, 'languages', {get: () => ['tr-TR', 'tr', 'en-US', 'en']});
-                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-                window.chrome = { runtime: {} };
             """)
             
             self.page = context.new_page()
             
-            # 2. Block Images/Fonts -> Speed & Stability on AWS
-            self.page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
+            # ENABLE RESOURCES: Real users load images. WAFs invoke 400 if assets aren't requested.
+            # self.page.route("**/*.{png,jpg...}", lambda route: route.abort()) 
             
             # Default Timeouts
-            self.page.set_default_timeout(45000)
-            self.page.set_default_navigation_timeout(45000)
+            self.page.set_default_timeout(60000)
+            self.page.set_default_navigation_timeout(60000)
             
-            logger.info("Browser launched in HEADLESS mode with Stealth & Resource Blocking.")
+            logger.info("Browser launched in NATURAL mode (Full Loading).")
 
     def scrape(self, custom_url=None):
-        target_url = custom_url or "https://www.bilyoner.com/iddaa?lig[]=1%3AT%C3%BCrkiye%20S%C3%BCper%20Lig&lig[]=1%3A%C4%B0ngiltere%20Premier%20Lig&lig[]=1%3A%C4%B0talya%20Serie%20A&lig[]=1%3A%C4%B0spanya%20La%20Liga"
+        # Simplify URL to basics to avoid Query String encoding 400s
+        target_url = "https://www.bilyoner.com/iddaa"
+        # We will filter the data in Python instead of URL if URL fails
+        
         self.start_browser()
         
         try:
             # STEP 1: Warm-up (Visit Home Page First)
-            # This sets cookies and headers like a real user session.
-            logger.info("Step 1: Visiting Homepage for Session Warming...")
+            logger.info("Step 1: Visiting Homepage...")
             try:
-                self.page.goto("https://www.bilyoner.com/", wait_until="domcontentloaded", timeout=30000)
-                time.sleep(3)
+                self.page.goto("https://www.bilyoner.com/", wait_until="domcontentloaded", timeout=45000)
+                time.sleep(5)
             except Exception as e:
                 logger.warning(f"Homepage warm-up warning: {e}")
 
             # STEP 2: Navigate to Target
             logger.info(f"Step 2: Navigating to Target URL: {target_url}")
             try:
+                # Load fully to trigger all WAF checks legitimately
                 response = self.page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
             except Exception as e:
                 logger.warning(f"Target navigation failed: {e}")
                 response = None
 
-            # Check Status & Fallback logic
+            # Check Status
             if not response or response.status >= 400:
-                status_code = response.status if response else "N/A"
-                logger.warning(f"Target URL returned error status: {status_code}. Switching to FALLBACK URL...")
+                errors = response.status if response else "Error"
+                logger.error(f"Main URL failed with {errors}. Trying simple fallback...")
                 
-                # Fallback to generic football page
-                fallback_url = "https://www.bilyoner.com/iddaa/futbol"
-                logger.info(f"Navigating to Fallback: {fallback_url}")
-                response = self.page.goto(fallback_url, wait_until="domcontentloaded", timeout=60000)
-                
-                if response and response.status >= 400:
-                    logger.error(f"Fallback URL also failed with status: {response.status}")
-                    return []
+                # Try just base domain if subpath fails
+                self.page.goto("https://www.bilyoner.com", wait_until="networkidle", timeout=60000)
 
             # STEP 3: Wait for Content & Simulate Human
             logger.info("Step 3: Waiting for content hydration...")
