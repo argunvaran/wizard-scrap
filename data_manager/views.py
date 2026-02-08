@@ -323,27 +323,37 @@ def scrape_hub(request):
 @login_required
 def run_web_scraper(request):
     """
-    Executes the Bilyoner scraper management command (Writing to Staging).
+    Executes the Bilyoner scraper management command in a BACKGROUND THREAD.
+    Essential for AWS/Production to avoid Nginx 504 Timeouts.
     """
     if request.method == "POST":
+        import threading
+        from django.db import connection
         from django.core.management import call_command
-        import sys
-        from io import StringIO
         
-        out = StringIO()
-        try:
-             # Redirect stdout to capture output
-             sys.stdout = out
-             call_command('update_bilyoner_bulletin')
-             result = out.getvalue()
-             messages.success(request, f"Scraping Tamamlandı! Lütfen verileri inceleyip onaylayın.\nSonuç: {result}")
-        except Exception as e:
-             messages.error(request, f"Hata Oluştu: {e}")
-        finally:
-             # Restore stdout
-             sys.stdout = sys.__stdout__
-             
-    return redirect('scrape_review')
+        def scrape_worker():
+            # Close any old DB connections for this thread
+            connection.close()
+            try:
+                # We can't capture stdout easily to messages in a thread, 
+                # but we can log errors or rely on the command's own logging/stdout
+                print("BACKGROUND SCRAPER STARTED...")
+                call_command('update_bilyoner_bulletin')
+                print("BACKGROUND SCRAPER FINISHED.")
+            except Exception as e:
+                print(f"BACKGROUND SCRAPER ERROR: {e}")
+            finally:
+                connection.close()
+
+        # Start Thread
+        t = threading.Thread(target=scrape_worker)
+        t.setDaemon(True)
+        t.start()
+        
+        messages.info(request, "Bilyoner Veri Çekme işlemi ARKAPLANDA başlatıldı. İşlem 1-2 dakika sürebilir. Lütfen 'İncele & Onayla' sayfasını ara sıra yenileyerek kontrol edin.")
+        return redirect('scrape_review')
+              
+    return redirect('scrape_hub')
 
 @login_required
 def scrape_review(request):
