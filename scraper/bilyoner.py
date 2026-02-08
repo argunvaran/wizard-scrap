@@ -58,8 +58,9 @@ class BilyonerScraper(BaseScraper):
             self.page.set_default_navigation_timeout(120000)
             
     def scrape(self, custom_url=None):
-        # User specified filtered URL for Multiple Leagues (Turkey, England, Spain, Italy)
-        url = custom_url or "https://www.bilyoner.com/iddaa/futbol?lig[]=1%3A%C4%B0ngiltere%20Premier%20Lig&lig[]=1%3AT%C3%BCrkiye%20S%C3%BCper%20Lig&lig[]=1%3A%C4%B0spanya%20La%20Liga&lig[]=1%3A%C4%B0talya%20Serie%20A"
+        # User specified filtered URL for Multiple Leagues (Turkey, England, Italy, Spain)
+        # UPDATED: Using the exact link provided by user: /iddaa instead of /iddaa/futbol
+        url = custom_url or "https://www.bilyoner.com/iddaa?lig[]=1%3AT%C3%BCrkiye%20S%C3%BCper%20Lig&lig[]=1%3A%C4%B0ngiltere%20Premier%20Lig&lig[]=1%3A%C4%B0talya%20Serie%20A&lig[]=1%3A%C4%B0spanya%20La%20Liga"
         logger.info(f"Connecting to {url}...")
         self.start_browser()
         
@@ -72,15 +73,15 @@ class BilyonerScraper(BaseScraper):
                 try:
                     logger.debug(f"Page load attempt {attempt + 1} ({current_url})")
                     
-                    # BLOCK IMAGES/FONTS for Speed
-                    self.page.route("**/*.{png,jpg,jpeg,svg,woff,woff2,gif,webp}", lambda route: route.abort())
+                    # ENABLE RESOURCES: Removing the block logic to ensure full SPA hydration
+                    # self.page.route("**/*.{png,jpg,jpeg,svg,woff,woff2,gif,webp}", lambda route: route.abort())
                     
                     try:
-                        self.page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
+                        self.page.goto(current_url, wait_until="networkidle", timeout=90000)
                     except Exception as nav_e:
                         logger.warning(f"Navigation Timeout for {current_url}: {nav_e}. Trying to proceed anyway...")
 
-                    time.sleep(5) # Hydration wait
+                    time.sleep(10) # 10s Wait for full hydration (AWS might be slow)
                     
                     # Try to accept cookies
                     try: 
