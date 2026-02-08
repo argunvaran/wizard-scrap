@@ -71,18 +71,19 @@ class BaseScraper:
             except: pass
             self.playwright = None
 
-    def navigate(self, url, timeout=90000):
+    def navigate(self, url, timeout=120000):
         if not self.page:
             self.start_browser()
         
         logger.info(f"Navigating to {url}...")
         for attempt in range(2):
             try:
-                # Use domcontentloaded for faster "ready" state
+                # Use domcontentloaded for faster "ready" state, wait 2 mins default
                 self.page.goto(url, timeout=timeout, wait_until="domcontentloaded")
                 return
             except Exception as e:
-                logger.warning(f"Navigation attempt {attempt+1} failed: {e}")
+                wait_t = timeout / 1000
+                logger.warning(f"Navigation attempt {attempt+1} failed after {wait_t}s: {e}")
                 if attempt == 1:
                     logger.error(f"Final navigation failure for {url}")
                     raise
