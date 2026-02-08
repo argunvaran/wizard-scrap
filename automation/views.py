@@ -248,11 +248,28 @@ def fetch_data_view(request, country, data_type):
             task_name = f"sync_{country}_squads"
             task = Task.objects.filter(name=task_name).first()
             
+            # Auto-heal: If task missing from DB but exists in Code Registry, create it.
+            if not task and task_name in TASK_REGISTRY:
+                from automation.services import TASK_REGISTRY # Ensure import
+                try:
+                    task = Task.objects.create(
+                        name=task_name,
+                        description=f"Auto-generated task for {country} squads",
+                        function_path=f"automation.services.{task_name}"
+                    )
+                except Exception as e:
+                    print(f"Error auto-creating task {task_name}: {e}")
+
             if task:
                 def run_thread():
                     connection.close()  # Ensure clean DB connection
-                    execute_single_task(task.pk)
-                    connection.close()
+                    # We use a fresh thread execution
+                    try:
+                        execute_single_task(task.pk)
+                    except Exception as e:
+                        print(f"Thread execution failed: {e}")
+                    finally:
+                        connection.close()
                 
                 t = threading.Thread(target=run_thread)
                 t.start()
@@ -260,7 +277,7 @@ def fetch_data_view(request, country, data_type):
                 messages.success(request, f"{country.title()} Squads scraping started in BACKGROUND. Check logs for progress.")
                 return redirect('automation_dashboard')
             else:
-                messages.error(request, f"Background task '{task_name}' not found. Please sync tasks.")
+                messages.error(request, f"Background task '{task_name}' could not be initialized. Please check code registry.")
                 return redirect('automation_dashboard')
 
         # STANDINGS / FIXTURES: Keep Synchronous (Fast enough for Preview)
