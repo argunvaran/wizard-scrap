@@ -1,4 +1,11 @@
+import os
+import json
+import time
+import logging
 from django.conf import settings
+from scraper.base import BaseScraper
+
+logger = logging.getLogger('scraper')
 
 class ItalySquadsScraper(BaseScraper):
     def scrape(self, custom_url=None):
