@@ -13,173 +13,175 @@ logger = logging.getLogger('scraper')
 class BilyonerScraper(BaseScraper):
     def start_browser(self):
         if not self.playwright:
-            logger.info("Initializing Playwright and Browser...")
+            logger.info("Initializing Playwright and Browser (AWS Optimized)...")
             self.playwright = sync_playwright().start()
+            
+            # Minimal, Stealthy Args
             args = [
-                "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
-                "--disable-infobars",
-                "--disable-dev-shm-usage",
-                "--disable-extensions",
-                "--disable-gpu",
                 "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-accelerated-2d-canvas",
+                "--no-first-run",
                 "--no-zygote",
-                "--window-size=1920,1080",
-            ]
-            # Force HEADLESS
-            # Add anti-detection args
-            args.extend([
-                "--disable-blink-features",
                 "--disable-blink-features=AutomationControlled",
-                "--disable-web-security",
-                "--allow-running-insecure-content"
-            ])
+                "--window-size=1920,1080",
+                "--window-position=0,0",
+                "--mute-audio",
+            ]
             
             self.browser = self.playwright.chromium.launch(
                 headless=True, 
                 args=args
             )
-            logger.info("Browser launched in HEADLESS mode.")
+            
             context = self.browser.new_context(
                 viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 locale="tr-TR",
                 timezone_id="Europe/Istanbul",
                 ignore_https_errors=True
             )
             
-            # Stealth script injection
-            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            # 1. Advanced Stealth Scripts
+            context.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                Object.defineProperty(navigator, 'languages', {get: () => ['tr-TR', 'tr', 'en-US', 'en']});
+                window.chrome = { runtime: {} };
+            """)
             
             self.page = context.new_page()
             
-            # Allow longer timeouts for AWS (limited resources)
-            self.page.set_default_timeout(60000)
-            self.page.set_default_navigation_timeout(60000)
+            # 2. Block Images/Fonts -> Speed & Stability on AWS
+            self.page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
             
+            # Default Timeouts
+            self.page.set_default_timeout(45000)
+            self.page.set_default_navigation_timeout(45000)
+            
+            logger.info("Browser launched in HEADLESS mode with Stealth & Resource Blocking.")
+
     def scrape(self, custom_url=None):
-        # User specified filtered URL for Multiple Leagues (Turkey, England, Italy, Spain)
-        # UPDATED: Using the exact link provided by user: /iddaa instead of /iddaa/futbol
-        url = custom_url or "https://www.bilyoner.com/iddaa?lig[]=1%3AT%C3%BCrkiye%20S%C3%BCper%20Lig&lig[]=1%3A%C4%B0ngiltere%20Premier%20Lig&lig[]=1%3A%C4%B0talya%20Serie%20A&lig[]=1%3A%C4%B0spanya%20La%20Liga"
-        logger.info(f"Connecting to {url}...")
+        target_url = custom_url or "https://www.bilyoner.com/iddaa?lig[]=1%3AT%C3%BCrkiye%20S%C3%BCper%20Lig&lig[]=1%3A%C4%B0ngiltere%20Premier%20Lig&lig[]=1%3A%C4%B0talya%20Serie%20A&lig[]=1%3A%C4%B0spanya%20La%20Liga"
         self.start_browser()
         
         try:
-            # 1. Load Page with Fallback
-            loaded = False
-            current_url = url
-            
-            for attempt in range(3):
-                try:
-                    logger.debug(f"Page load attempt {attempt + 1} ({current_url})")
-                    
-                    try:
-                        # AWS FIX: 'networkidle' is too strict and times out often on slow connections.
-                        # We use 'domcontentloaded' and then wait for hydration.
-                        self.page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
-                    except Exception as nav_e:
-                        logger.warning(f"Navigation Timeout for {current_url}: {nav_e}. Trying to proceed anyway...")
+            # STEP 1: Warm-up (Visit Home Page First)
+            # This sets cookies and headers like a real user session.
+            logger.info("Step 1: Visiting Homepage for Session Warming...")
+            try:
+                self.page.goto("https://www.bilyoner.com/", wait_until="domcontentloaded", timeout=30000)
+                time.sleep(3)
+            except Exception as e:
+                logger.warning(f"Homepage warm-up warning: {e}")
 
-                    time.sleep(15) # 15s Wait for full hydration (Increased for AWS)
-                    
-                    # Try to accept cookies
-                    try: 
-                        self.page.locator("text=Kabul Et").first.click(timeout=3000)
-                    except: pass
-                    try:
-                         self.page.locator("#onetrust-accept-btn-handler").click(timeout=3000)
-                    except: pass
-                    
-                    # Check for Success Indicator
-                    if self.page.locator("div:has-text('MS 1')").count() > 0:
-                        loaded = True
-                        logger.info("Page loaded successfully (content found).")
-                        break
-                    
-                    # Fallback Logic: Try Base URL on failure
-                    page_title = self.page.title()
-                    logger.warning(f"Content missing on {current_url}. Page Title: {page_title}")
-                    
-                    # Debug Screenshot
-                    try:
-                        os.makedirs("media", exist_ok=True)
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        screenshot_path = f"media/debug_screenshot_{timestamp}.png"
-                        self.page.screenshot(path=screenshot_path)
-                        logger.info(f"Saved debug screenshot to {screenshot_path}")
-                    except Exception as sc_e:
-                        logger.warning(f"Could not save screenshot: {sc_e}")
-
-                    if not loaded and attempt == 1:
-                        logger.info("Switching to BASE URL as fallback...")
-                        current_url = "https://www.bilyoner.com/iddaa/futbol"
-                        
-                    self.page.reload()
-                    
-                except Exception as e:
-                    logger.error(f"Page load error (attempt {attempt+1}): {e}")
+            # STEP 2: Navigate to Target
+            logger.info(f"Step 2: Navigating to Target URL: {target_url}")
+            response = self.page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
             
-            if not loaded:
-                logger.error(f"Failed to load page content after retries. Final Title: {self.page.title()}")
+            # Check Status
+            if response and response.status >= 400:
+                logger.error(f"Target URL returned error status: {response.status}")
                 return []
 
-            # 2. STREAM BASED SCRAPING (Capture All, Filter Later)
+            # STEP 3: Wait for Content & Simulate Human
+            logger.info("Step 3: Waiting for content hydration...")
+            
+            # Force a mouse move to trigger any lazy-load or activity sensors
+            try:
+                self.page.mouse.move(100, 100)
+                self.page.mouse.move(500, 500)
+            except: pass
+
+            # Wait for specific marker OR generous sleep
+            # We look for *any* event row or odds.
+            try:
+                # Wait for at least one odds button or row
+                self.page.wait_for_selector("div", state="attached", timeout=10000)
+                time.sleep(5) # Give it 5s raw time for JS execution
+            except:
+                logger.warning("Selector wait timed out, proceeding with raw dump...")
+
+            # Scroll trigger
+            try:
+                self.page.evaluate("window.scrollTo(0, 300)")
+                time.sleep(1)
+            except: pass
+
+            # FINAL CHECK: content presence
+            content = self.page.content()
+            if "MS 1" not in content and "Oran" not in content:
+                title = self.page.title()
+                logger.error(f"CRITICAL: No betting content found! Page Title: {title}")
+                # Log a snippet of body to see what *is* there (Login screen? access denied?)
+                body_text = self.page.inner_text("body")[:500].replace('\n', ' ')
+                logger.error(f"Page Preview: {body_text}...")
+                return []
+            
+            logger.info("Content verified (MS 1/Oran found). Starting extraction...")
+
+            # 4. STREAM BASED SCRAPING (Capture All)
             global_events = [] 
             
-            # Find Scroller and Position Mouse
-            # Strategy: Click center of screen to focus the main content area, then use Keyboard PageDown
-            # This avoids needing to know the exact class name of the scroller div.
+            # Focus
             try:
-                # Click center of viewport to focus
-                vp = self.page.viewport_size
-                if vp:
-                    center_x = vp['width'] / 2
-                    center_y = vp['height'] / 2
-                    self.page.mouse.click(center_x, center_y)
-                    logger.debug(f"Clicked center at ({center_x}, {center_y}) to focus.")
-                    
-                    # Optional: specific click on a match row if reachable to ensure focus matches
-                    # self.page.click("div:has-text('MS 1')") 
-            except Exception as e:
-                logger.warning(f"Focus warning: {e}")
-
-            # SCROLL LOOP - Deep scan
-            max_scrolls = 200 # PageDown covers more ground, so fewer steps needed
-            logger.info("Starting scroll capture (Keyboard PageDown)...")
+                self.page.click("body", position={"x": 100, "y": 100}, force=True)
+            except: pass
+            
+            max_scrolls = 200
+            no_change_count = 0
+            last_count = 0
+            
+            logger.info("Starting scroll loop...")
             
             for i in range(max_scrolls):
-                # Grab visible text blocks
+                # Grab visible text blocks EFFICIENTLY
                 chunk = self.page.evaluate("""() => {
                     const items = [];
+                    // Target specific rows if possible, else generic divs with constraints
                     const divs = document.querySelectorAll('div');
                     for (let d of divs) {
-                        const t = d.innerText.trim().replace(/\\n/g, " ");
-                        if (t.length > 3 && t.length < 300) {
-                            // Capture match rows (look for odds float OR Missing Odd Pattern)
-                            // We need to capture rows like "Barcelona Mallorca — MS 1" even if they have no floats yet
-                            if ((t.match(/\\d+\\.\\d{2}/) || t.includes("MS 1")) && t.includes("-")) { 
-                                items.push({type: 'match', text: t});
+                        // Only leaf nodes or specific text containers
+                        if (d.childElementCount > 2) continue; // Skip containers, get leaves
+                        
+                        const t = d.innerText;
+                        if (!t) continue;
+                        const cleanT = t.trim().replace(/\\n/g, " ");
+                        
+                        if (cleanT.length > 3 && cleanT.length < 300) {
+                             if ((cleanT.match(/\\d+\\.\\d{2}/) || cleanT.includes("MS 1")) && cleanT.includes("-")) { 
+                                items.push({type: 'match', text: cleanT});
                             } else if (
-                                t.match(/premier|lig|serie|la liga/i) || 
-                                t.match(/^(bugün|yarın|paz|pzt|sal|çar|per|cum|cmt)/i)
+                                cleanT.match(/premier|lig|serie|la liga/i) || 
+                                cleanT.match(/^(bugün|yarın|paz|pzt|sal|çar|per|cum|cmt)/i)
                             ) {
-                                items.push({type: 'header', text: t});
+                                items.push({type: 'header', text: cleanT});
                             }
                         }
                     }
                     return items;
                 }""")
                 
-                for item in chunk:
-                    global_events.append(item)
+                if chunk:
+                    global_events.extend(chunk)
                 
-                # Scroll down using Keyboard, which triggers virtual scrollers better
+                # Intelligent Scroll
                 self.page.keyboard.press("PageDown")
-                time.sleep(0.5)
+                time.sleep(0.3) # Fast scroll
                 
-                if i % 20 == 0:
-                    logger.debug(f"Scroll step {i}/{max_scrolls}, events captured so far: {len(global_events)}")
-                
+                # Log progress periodically
+                if i % 50 == 0:
+                    current_len = len(global_events)
+                    logger.debug(f"Scroll {i}: {current_len} raw items.")
+                    if current_len == last_count:
+                        no_change_count += 1
+                        if no_change_count > 5: # Stop if stuck
+                            logger.info("No new data found for 5 checks, stopping scroll.")
+                            break
+                    else:
+                        no_change_count = 0
+                    last_count = current_len
+
             logger.info(f"Captured {len(global_events)} raw events. Processing stream...")
             
             # 3. PYTHON STREAM PROCESSING
