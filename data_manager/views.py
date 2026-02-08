@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, HttpResponse
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -59,46 +59,50 @@ def listings(request, data_type):
     Generic view for Standings, Fixtures, and Players.
     data_type: 'standings', 'fixtures', 'players'
     """
-    form = CountryFilterForm(request.GET)
-    selected_country = request.GET.get('country', 'ALL')
-    
-    queryset = None
-    model_class = None
-    template_name = ""
+    try:
+        form = CountryFilterForm(request.GET)
+        selected_country = request.GET.get('country', 'ALL')
+        
+        queryset = None
+        model_class = None
+        template_name = ""
 
-    if data_type == 'standings':
-        model_class = Standing
-        template_name = 'standings.html'
-    elif data_type == 'fixtures':
-        model_class = Fixture
-        template_name = 'fixtures.html'
-    elif data_type == 'players':
-        model_class = Player
-        template_name = 'players.html'
-    else:
-        return redirect('dashboard')
+        if data_type == 'standings':
+            model_class = Standing
+            template_name = 'standings.html'
+        elif data_type == 'fixtures':
+            model_class = Fixture
+            template_name = 'fixtures.html'
+        elif data_type == 'players':
+            model_class = Player
+            template_name = 'players.html'
+        else:
+            return redirect('dashboard')
 
-    if selected_country and selected_country != 'ALL':
-        queryset = model_class.objects.filter(country=selected_country)
-    else:
-        queryset = model_class.objects.all()
+        if selected_country and selected_country != 'ALL':
+            queryset = model_class.objects.filter(country=selected_country)
+        else:
+            queryset = model_class.objects.all()
 
-    # Optimization
-    if data_type == 'standings':
-        queryset = queryset.order_by('country', 'rank')
-    elif data_type == 'fixtures':
-        queryset = queryset.order_by('country', '-id') # or week
-    elif data_type == 'players':
-        queryset = queryset.order_by('country', 'team_name', 'jersey_number')[:200] # Limit for performance
+        # Optimization
+        if data_type == 'standings':
+            queryset = queryset.order_by('country', 'rank')
+        elif data_type == 'fixtures':
+            queryset = queryset.order_by('country', '-id') # or week
+        elif data_type == 'players':
+            queryset = queryset.order_by('country', 'team_name', 'jersey_number')[:200] # Limit for performance
 
-    context = {
-        'form': form,
-        'data_type': data_type,
-        'items': queryset,
-        'selected_country': selected_country,
-        'show_update_button': request.user.is_superuser  # Pass simple boolean
-    }
-    return render(request, template_name, context)
+        context = {
+            'form': form,
+            'data_type': data_type,
+            'items': queryset,
+            'selected_country': selected_country,
+            'show_update_button': request.user.is_superuser  # Pass simple boolean
+        }
+        return render(request, template_name, context)
+    except Exception as e:
+        import traceback
+        return HttpResponse(f"<h1>HATA DETAYI (Debug)</h1><pre>{traceback.format_exc()}</pre>", status=500)
 
 @login_required
 def bulletin(request):
