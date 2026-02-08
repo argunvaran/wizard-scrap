@@ -64,39 +64,51 @@ class BilyonerScraper(BaseScraper):
         self.start_browser()
         
         try:
-            # 1. Load Page with Retries
+            # 1. Load Page with Fallback
             loaded = False
+            current_url = url
+            
             for attempt in range(3):
                 try:
-                    logger.debug(f"Page load attempt {attempt + 1}")
+                    logger.debug(f"Page load attempt {attempt + 1} ({current_url})")
                     
                     # BLOCK IMAGES/FONTS for Speed
-                    self.page.route("**/*.{png,jpg,jpeg,svg,woff,woff2}", lambda route: route.abort())
+                    self.page.route("**/*.{png,jpg,jpeg,svg,woff,woff2,gif,webp}", lambda route: route.abort())
                     
-                    self.page.goto(url, wait_until="domcontentloaded") # Faster than networkidle
-                    time.sleep(5) # Explicit wait for hydration
+                    try:
+                        self.page.goto(current_url, wait_until="domcontentloaded", timeout=60000)
+                    except Exception as nav_e:
+                        logger.warning(f"Navigation Timeout for {current_url}: {nav_e}. Trying to proceed anyway...")
+
+                    time.sleep(5) # Hydration wait
                     
-                    # Try to accept cookies (aggressive check)
+                    # Try to accept cookies
                     try: 
-                        self.page.locator("text=Kabul Et").first.click(timeout=2000)
+                        self.page.locator("text=Kabul Et").first.click(timeout=3000)
                     except: pass
                     try:
-                         self.page.locator("#onetrust-accept-btn-handler").click(timeout=2000)
+                         self.page.locator("#onetrust-accept-btn-handler").click(timeout=3000)
                     except: pass
                     
-                    
-                    # Wait for meaningful content (MS 1 or Header)
+                    # Check for Success Indicator
                     if self.page.locator("div:has-text('MS 1')").count() > 0:
                         loaded = True
                         logger.info("Page loaded successfully (content found).")
                         break
-                    logger.warning("Content not found, reloading...")
+                    
+                    # Fallback Logic: Try Base URL on failure
+                    logger.warning(f"Content missing on {current_url}. Page Title: {self.page.title()}")
+                    if not loaded and attempt == 1:
+                        logger.info("Switching to BASE URL as fallback...")
+                        current_url = "https://www.bilyoner.com/iddaa/futbol"
+                        
                     self.page.reload()
+                    
                 except Exception as e:
                     logger.error(f"Page load error (attempt {attempt+1}): {e}")
             
             if not loaded:
-                logger.error("Failed to load page content after retries.")
+                logger.error(f"Failed to load page content after retries. Final Title: {self.page.title()}")
                 return []
 
             # 2. STREAM BASED SCRAPING (Capture All, Filter Later)
