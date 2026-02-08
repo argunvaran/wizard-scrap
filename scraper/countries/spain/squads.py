@@ -5,16 +5,35 @@ from scraper.base import BaseScraper
 
 class SpainSquadsScraper(BaseScraper):
     def scrape(self, custom_url=None):
-        # We rely on the JSON link file
-        links_path = "c:/Code/web_scraper_0/data/spain_team_links.json"
+        # Dynamic path handling for AWS/Local compatibility
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         
-        if not os.path.exists(links_path):
-            links_path = os.path.join(os.getcwd(), "data", "spain_team_links.json")
-            if not os.path.exists(links_path):
-                print("No team links file found. Please run link extractor first (via Squads button).")
-                # Attempt to run link extractor on the fly?
-                # For now return empty, or logic in engine can handle it.
-                return []
+        # Taking "data" folder at root of workspace
+        data_dir = os.path.join(base_dir, "data")
+        
+        # Fallback for when running from 'web_app' folder context
+        if not os.path.exists(data_dir):
+             data_dir = os.path.join(os.getcwd(), "..", "data")
+             
+        links_filename = "spain_team_links.json"
+        
+        # Search strategy
+        possible_paths = [
+            os.path.join(data_dir, links_filename),
+            os.path.join(os.getcwd(), "data", links_filename),
+            "/app/data/" + links_filename,
+            "c:/Code/web_scraper_0/data/" + links_filename
+        ]
+        
+        links_path = None
+        for p in possible_paths:
+            if os.path.exists(p):
+                links_path = p
+                break
+        
+        if not links_path:
+            print("No team links file found. Please run link extractor first.")
+            return []
             
         with open(links_path, "r", encoding="utf-8") as f:
             teams = json.load(f)
