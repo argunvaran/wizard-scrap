@@ -164,9 +164,13 @@ def receive_external_bulletin(request):
     return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
 
 @login_required
+@login_required
 def scrape_local_and_push_view(request):
     """
     Triggered from Local Dashboard (Superuser Only).
+    Handles:
+    1. action='scrape_local': Scrape Bilyoner -> Save to Local DB
+    2. action='push_to_aws': Read Local DB -> Push to Remote Server
     """
     if not request.user.is_superuser:
         return JsonResponse({'success': False, 'error': 'Yetkisiz Erişim'})
@@ -174,37 +178,93 @@ def scrape_local_and_push_view(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            action = data.get('action', 'push_to_aws') # Default legacy behavior
             target_url = data.get('target_url')
             
-            if not target_url:
-                return JsonResponse({'success': False, 'error': 'Hedef AWS URL girilmedi.'})
-            
-            # 1. Scrape Locally
-            scraper = BilyonerScraper()
-            matches = scraper.scrape()
-            
-            if not matches:
-                return JsonResponse({'success': False, 'error': 'Bilyonerden veri çekilemedi (0 maç).'})
+            # --- ACTION 1: SCRAPE LOCAL ---
+            if action == 'scrape_local':
+                scraper = BilyonerScraper()
+                # Use default scrape (headful locally per our update)
+                matches = scraper.scrape()
                 
-            # 2. Push to Remote
-            payload = {
-                "secret": "WFM_PRO_2026_SECURE_SYNC",
-                "matches": matches
-            }
-            
-            try:
-                resp = requests.post(target_url, json=payload, timeout=20)
-                if resp.status_code == 200:
-                    remote_res = resp.json()
-                    if remote_res.get('success'):
-                        return JsonResponse({'success': True, 'count': len(matches), 'msg': f"AWS Başarıyla Güncellendi: {remote_res.get('count')} Maç"})
+                if not matches:
+                    return JsonResponse({'success': False, 'error': 'Bilyonerden veri çekilemedi (0 maç).'})
+                
+                # Save to Local DB
+                BilyonerBulletin.objects.all().delete()
+                bulk_list = []
+                for m in matches:
+                    bulk_list.append(BilyonerBulletin(
+                        unique_key=m.get('unique_key'),
+                        country=m.get('country', 'TURKEY'),
+                        league=m.get('league', '-'),
+                        match_date=m.get('match_date', ''),
+                        match_time=m.get('match_time', '00:00'),
+                        home_team=m.get('home_team', 'Unknown'),
+                        away_team=m.get('away_team', 'Unknown'),
+                        ms_1=m.get('ms_1', '-'),
+                        ms_x=m.get('ms_x', '-'),
+                        ms_2=m.get('ms_2', '-'),
+                        under_2_5=m.get('under_2_5', '-'),
+                        over_2_5=m.get('over_2_5', '-')
+                    ))
+                BilyonerBulletin.objects.bulk_create(bulk_list)
+                
+                return JsonResponse({
+                    'success': True, 
+                    'count': len(matches), 
+                    'msg': f"Lokal veritabanı güncellendi: {len(matches)} Maç."
+                })
+
+            # --- ACTION 2: PUSH TO AWS ---
+            elif action == 'push_to_aws':
+                if not target_url:
+                    return JsonResponse({'success': False, 'error': 'Hedef AWS URL girilmedi.'})
+                
+                # Read from Local DB
+                local_matches = BilyonerBulletin.objects.all()
+                if not local_matches.exists():
+                     return JsonResponse({'success': False, 'error': 'Lokal veritabanı boş! Önce "Bülteni Yenile" yapın.'})
+
+                # Serialize
+                matches_payload = []
+                for m in local_matches:
+                    matches_payload.append({
+                        'unique_key': m.unique_key,
+                        'country': m.country,
+                        'league': m.league,
+                        'match_date': m.match_date,
+                        'match_time': m.match_time,
+                        'home_team': m.home_team,
+                        'away_team': m.away_team,
+                        'ms_1': m.ms_1,
+                        'ms_x': m.ms_x,
+                        'ms_2': m.ms_2,
+                        'under_2_5': m.under_2_5,
+                        'over_2_5': m.over_2_5,
+                    })
+
+                payload = {
+                    "secret": "WFM_PRO_2026_SECURE_SYNC",
+                    "matches": matches_payload
+                }
+                
+                try:
+                    resp = requests.post(target_url, json=payload, timeout=20)
+                    if resp.status_code == 200:
+                        remote_res = resp.json()
+                        if remote_res.get('success'):
+                            return JsonResponse({'success': True, 'count': len(matches_payload), 'msg': f"AWS Başarıyla Güncellendi: {remote_res.get('count')} Maç"})
+                        else:
+                            return JsonResponse({'success': False, 'error': f"AWS Hatası: {remote_res.get('error')}"})
                     else:
-                        return JsonResponse({'success': False, 'error': f"AWS Hatası: {remote_res.get('error')}"})
-                else:
-                    return JsonResponse({'success': False, 'error': f"AWS HTTP Hatası: {resp.status_code}"})
-            except Exception as net_err:
-                return JsonResponse({'success': False, 'error': f"AWS Bağlantı Hatası: {str(net_err)}"})
-                
+                        return JsonResponse({'success': False, 'error': f"AWS HTTP Hatası: {resp.status_code}"})
+                except Exception as net_err:
+                    return JsonResponse({'success': False, 'error': f"AWS Bağlantı Hatası: {str(net_err)}"})
+            
+            else:
+                 return JsonResponse({'success': False, 'error': f'Geçersiz işlem: {action}'})
+
         except Exception as e:
             return JsonResponse({'success': False, 'error': f"İşlem Hatası: {str(e)}"})
             

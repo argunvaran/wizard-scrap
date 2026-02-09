@@ -17,43 +17,67 @@
         <div class="card bg-light border-warning">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
-                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-cloud-upload-fill text-warning"></i> AWS Sync (Local-to-Remote)</h6>
-                    <small class="text-muted">Bu bilgisayardan veri çekip AWS sunucusuna gönderir.</small>
+                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-tools text-primary"></i> Lokal Operasyon Paneli
+                    </h6>
+                    <small class="text-muted">Verileri önce lokale çek, sonra AWS sunucusuna gönder.</small>
                 </div>
-                <button onclick="triggerAwsPush()" id="btnAwsPush" class="btn btn-warning btn-sm fw-bold">
-                    <i class="bi bi-rocket-takeoff"></i> AWS'ye Gönder
-                </button>
+                <div>
+                    <button onclick="triggerLocalScrape()" id="btnLocal" class="btn btn-warning btn-sm fw-bold me-2">
+                        <i class="bi bi-arrow-clockwise"></i> 1. Bülteni Yenile (Lokal)
+                    </button>
+                    <button onclick="triggerAwsPush()" id="btnAwsPush" class="btn btn-primary btn-sm fw-bold">
+                        <i class="bi bi-cloud-upload-fill"></i> 2. AWS'ye Gönder
+                    </button>
+                </div>
             </div>
         </div>
         <script>
-            async function triggerAwsPush() {
-                const btn = document.getElementById('btnAwsPush');
-                // Ask for URL (stored in localStorage for convenience)
-                let defaultUrl = localStorage.getItem('aws_target_url') || 'http://YOUR_AWS_IP/analysis/api/push-bulletin/';
-                const targetUrl = prompt("AWS Hedef URL'sini girin:", defaultUrl);
-                
-                if (!targetUrl) return;
-                
-                // Save for next time
-                localStorage.setItem('aws_target_url', targetUrl);
-                
-                if (!confirm(`${targetUrl} adresine veri gönderilecek. Onaylıyor musunuz?`)) return;
-                
+            async function triggerLocalScrape() {
+                const btn = document.getElementById('btnLocal');
+                if (!confirm("Bilyoner sitesinden güncel veriler çekilip LOKAL veritabanına kaydedilecek. Devam edilsin mi?")) return;
+
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> İşleniyor...';
-                
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Çekiliyor...';
+
                 try {
                     const response = await fetch("{% url 'scrape_local_push' %}", {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({ target_url: targetUrl })
+                        body: JSON.stringify({ action: 'scrape_local' }),
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
                     });
-                    
                     const res = await response.json();
-                    
+                    if (res.success) {
+                        alert(`✅ ${res.msg}\nSayfa yenileniyor...`);
+                        location.reload();
+                    } else {
+                        alert(`❌ HATA: ${res.error}`);
+                    }
+                } catch (err) { alert("Hata: " + err); }
+                finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 1. Bülteni Yenile (Lokal)'; }
+            }
+
+            async function triggerAwsPush() {
+                const btn = document.getElementById('btnAwsPush');
+                let defaultUrl = localStorage.getItem('aws_target_url') || 'http://YOUR_AWS_IP/analysis/api/push-bulletin/';
+                const targetUrl = prompt("AWS Hedef URL (örn: wfm-pro.com):", defaultUrl);
+
+                if (!targetUrl) return;
+                localStorage.setItem('aws_target_url', targetUrl);
+
+                if (!confirm(`LOKAL veritabanındaki maçlar ${targetUrl} adresine gönderilecek. Onaylıyor musunuz?`)) return;
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gönderiliyor...';
+
+                try {
+                    const response = await fetch("{% url 'scrape_local_push' %}", {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'push_to_aws', target_url: targetUrl }),
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
+                    });
+
+                    const res = await response.json();
+
                     if (res.success) {
                         alert(`✅ BAŞARILI!\n\n${res.msg}`);
                     } else {
@@ -63,7 +87,7 @@
                     alert(`❌ BAĞLANTI HATASI:\n\n${err}`);
                 } finally {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-rocket-takeoff"></i> AWS\'ye Gönder';
+                    btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> 2. AWS\'ye Gönder';
                 }
             }
         </script>
@@ -115,12 +139,14 @@
 
                 {% if item.result.home_stats and item.result.away_stats %}
                 <div class="d-flex justify-content-between small text-muted px-2">
-                    <span title="Puan/Sıra">{{ item.result.home_stats.points }}P (#{{ item.result.home_stats.rank }})</span>
-                        
+                    <span title="Puan/Sıra">{{ item.result.home_stats.points }}P (#{{ item.result.home_stats.rank
+                        }})</span>
+
 
                     <span>Form Durumu</span>
-                    <span title="Puan/Sıra"> (#{{ item.result.away_stats.rank }}) {{ item.result.away_stats.points }}P</span>
-                        
+                    <span title="Puan/Sıra"> (#{{ item.result.away_stats.rank }}) {{ item.result.away_stats.points
+                        }}P</span>
+
 
                 </div>
                 {% endif %}
@@ -137,8 +163,9 @@
                         Oranlar: {{ item.match.ms_1 }} - {{ item.match.ms_x }} - {{ item.match.ms_2 }}
                     </span>
                     {% if item.value_bet %}
-                    <span class="badge bg-success animate-pulse"><i class="bi bi-star-fill"></i> {{ item.value_bet }}</span>
-                        
+                    <span class="badge bg-success animate-pulse"><i class="bi bi-star-fill"></i> {{ item.value_bet
+                        }}</span>
+
 
                     {% endif %}
                 </div>

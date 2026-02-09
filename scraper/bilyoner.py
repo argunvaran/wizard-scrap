@@ -29,86 +29,59 @@ if not logger.handlers:
     logger.addHandler(ch)
 
 class BilyonerScraper(BaseScraper):
-    def start_browser(self):
+    def start_browser(self, headless=False):
         if not self.playwright:
-            logger.info("Initializing Playwright and Browser (AWS DEBUG Mode)...")
+            logger.info(f"Initializing Playwright (Headless={headless})...")
             self.playwright = sync_playwright().start()
             
-            # Minimal, Stealthy Args
+            # Standard Args (Less Aggressive for Local Stability)
             args = [
                 "--no-sandbox",
-                "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-accelerated-2d-canvas",
-                "--no-first-run",
-                "--no-zygote",
-                "--disable-blink-features=AutomationControlled",
                 "--window-size=1920,1080",
                 "--window-position=0,0",
-                "--mute-audio",
+                "--disable-blink-features=AutomationControlled",
             ]
             
-            # NEW HEADLESS MODE (The "Magic" Switch)
-            # --headless=new renders exactly like a headful browser, bypassing old WAF checks.
-            args.extend([
-                "--headless=new" 
-            ])
-            
-            # PROXY CONFIGURATION 
-            # (Uncomment and fill this if you have a Residential Proxy)
-            # proxy_server = "http://user:pass@gateway.proxy-provider.com:port" 
-            # Or use a separate dictionary if auth is separate:
-            
-            # Example for simple IP auth or full URL:
+            # If strictly headless is requested (e.g. Server Mode)
+            if headless:
+                args.append("--headless=new")
+
+            # PROXY CONFIGURATION
             proxy_conf = None
-            
-            # UNCOMMENT BELOW TO ENABLE PROXY
-            # proxy_conf = {
-            #     "server": "http://brd.superproxy.io:22225", # Example BrightData
-            #     "username": "brd-customer-hl_xyz-zone-static",
-            #     "password": "your_password"
-            # }
-            
-            logger.debug(f"Launching browser with args: {args}")
+            # proxy_conf = { "server": "..." } 
 
             launch_options = {
-                "headless": False, 
+                "headless": headless, 
                 "args": args
             }
             
             if proxy_conf:
-                logger.info(f"Using Proxy: {proxy_conf['server']}")
+                logger.info(f"Using Proxy: {proxy_conf.get('server')}")
                 launch_options["proxy"] = proxy_conf
 
+            logger.debug(f"Launching browser with options: {launch_options}")
             self.browser = self.playwright.chromium.launch(**launch_options)
             
-            logger.debug("Browser launched successfully.")
-            
-            # Organic Context
+            # Standard Context
             context = self.browser.new_context(
                 viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36", 
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 locale="tr-TR",
-                timezone_id="Europe/Istanbul",
-                extra_http_headers={
-                    "Referer": "https://www.google.com.tr/"
-                }
+                timezone_id="Europe/Istanbul"
             )
             
             # Minimal Stealth
-            context.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-            """)
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
             
-            # Network Request Logging
+            self.page = context.new_page()
+            
+            # Response Logging
             def log_response(response):
                 if response.status >= 400:
                     logger.warning(f"Request Failed: {response.url} Status: {response.status}")
-
-            self.page = context.new_page()
             self.page.on("response", log_response)
-            
-            # Default Timeouts
+
             self.page.set_default_timeout(60000)
             self.page.set_default_navigation_timeout(60000)
 
@@ -117,7 +90,7 @@ class BilyonerScraper(BaseScraper):
         target_url = "https://www.bilyoner.com/iddaa"
         # We will filter the data in Python instead of URL if URL fails
         
-        self.start_browser()
+        self.start_browser(headless=False) # Helper defaulting to visible mode for Local Stability
         
         try:
             # STEP 1: Warm-up (Visit Home Page First)
