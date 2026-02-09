@@ -115,27 +115,47 @@ def receive_external_bulletin(request):
     Bypasses AWS IP blocks by allowing the user to scrape locally and push here.
     """
     import logging
-    logger = logging.getLogger('api_receiver')
+    import sys
     
+    # Configure logger to output to stdout for Docker logs
+    logger = logging.getLogger('api_receiver')
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    if not logger.handlers:
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
     if request.method == 'POST':
         try:
-            logger.info(f"Received push request from {request.META.get('REMOTE_ADDR')}")
+            remote_ip = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
+            logger.info(f"🚀 INCOMING PUSH REQUEST from {remote_ip}")
+            
             data = json.loads(request.body)
             secret = data.get('secret')
             
-            # Simple security check (Hardcoded for this user context, normally use env)
+            # Authenticate
             if secret != "WFM_PRO_2026_SECURE_SYNC":
+                logger.warning(f"❌ UNAUTHORIZED ATTEMPT from {remote_ip}")
                 return JsonResponse({"success": False, "error": "Unauthorized"}, status=403)
                 
             matches = data.get('matches', [])
-            if not matches:
-                return JsonResponse({"success": False, "error": "No matches provided"})
-                
-            # Clear and Insert
-            # Using BilyonerBulletin directly or Staging? Let's use BilyonerBulletin for immediate view
-            # Or better: Update the BilyonerBulletin table directly.
+            match_count = len(matches)
+            logger.info(f"📦 Payload Contains: {match_count} matches")
             
-            BilyonerBulletin.objects.all().delete()
+            if not matches:
+                logger.warning("⚠️ Empty matches list received.")
+                return JsonResponse({"success": False, "error": "No matches provided"})
+            
+            # Log first match for verification
+            first_match = matches[0]
+            logger.info(f"🔍 Sample Data (First Match): {first_match.get('home_team')} vs {first_match.get('away_team')} @ {first_match.get('match_time')}")
+
+            # Database Operation
+            logger.info("🗑️ Clearing existing BilyonerBulletin table...")
+            del_count, _ = BilyonerBulletin.objects.all().delete()
+            logger.info(f"✅ Deleted {del_count} old records.")
             
             bulk_list = []
             for m in matches:
@@ -154,11 +174,18 @@ def receive_external_bulletin(request):
                     over_2_5=m.get('over_2_5', '-')
                 ))
             
-            BilyonerBulletin.objects.bulk_create(bulk_list)
+            logger.info(f"✍️ Bulk creating {len(bulk_list)} new records...")
+            objs = BilyonerBulletin.objects.bulk_create(bulk_list)
+            logger.info(f"✅ SUCCESSFULLY INSERTED {len(objs)} records into DB.")
             
-            return JsonResponse({"success": True, "count": len(bulk_list)})
+            # Verify DB state immediately
+            final_count = BilyonerBulletin.objects.count()
+            logger.info(f"📊 Final DB Count: {final_count}")
+
+            return JsonResponse({"success": True, "count": len(objs)})
             
         except Exception as e:
+            logger.error(f"❌ CRITICAL ERROR: {str(e)}", exc_info=True)
             return JsonResponse({"success": False, "error": str(e)}, status=500)
             
     return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
