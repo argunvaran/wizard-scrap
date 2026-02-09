@@ -32,9 +32,8 @@
                     </p>
 
                     <div class="d-grid gap-2">
-                        <button onclick="runLocalScrape()" class="btn btn-outline-dark" {% if is_cloud %}disabled{%
-                            endif %}>
-
+                        <button onclick="runLocalScrape()" class="btn btn-outline-dark" {% if is_cloud %}disabled{% endif %}>
+                            
 
                             <i class="bi bi-arrow-clockwise"></i> 1. Veriyi Çek (Görünür Mod)
                         </button>
@@ -67,10 +66,8 @@
                     </p>
 
                     <div class="d-grid gap-2">
-                        <button onclick="runServerScrape()" class="btn btn-primary" {% if not is_cloud %}disabled{%
-                            endif %}>
-
-
+                        <button onclick="runServerScrape()" class="btn btn-primary" {% if not is_cloud %}disabled{% endif %}>
+                           
                             <i class="bi bi-cloud-download"></i> Direkt Sunucuda Çek
                         </button>
                     </div>
@@ -89,9 +86,8 @@
 
 <script>
     // --- LOCAL FUNCTIONS ---
-    // --- LOCAL FUNCTIONS ---
     async function runLocalScrape() {
-        if (!confirm("Tarayıcı açılacak ve Bilyoner verileri LOKAL veritabkilecek. Devam?")) return;
+        if (!confirm("Tarayıcı açılacak ve Bilyoner verileri LOKAL veritabanına çekilecek. Devam?")) return;
 
         const btn = event.target;
         const originalText = btn.innerHTML;
@@ -110,32 +106,38 @@
     }
 
     async function runAwsPush() {
-        // Default to HTTPS and the correct domain
-        let defaultUrl = localStorage.getItem('aws_target_url') || 'https://wfm-pro.com/analysis/api/push-bulletin/';
+        // PREFER DOMAIN OVER IP for SSL/HTTPS validity
+        const DOMAIN_URL = 'https://wfm-pro.com/analysis/api/push-bulletin/';
 
-        let targetUrl = prompt("AWS Hedef URL (HTTPS zorunlu):", defaultUrl);
+        // If user previously saved an IP, force switch to Domain for HTTPS compatibility
+        let savedUrl = localStorage.getItem('aws_target_url') || DOMAIN_URL;
+        if (savedUrl.includes('34.203') || savedUrl.match(/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/)) {
+            savedUrl = DOMAIN_URL;
+        }
+
+        let targetUrl = prompt("AWS Hedef URL (HTTPS zorunlu):", savedUrl);
         if (!targetUrl) return;
 
         // Auto-fix URL formatting
         targetUrl = targetUrl.trim();
-        if (!targetUrl.startsWith('http')) {
-            targetUrl = 'https://' + targetUrl;
-        } else if (targetUrl.startsWith('http://')) {
-            // Force Upgrade to HTTPS if they typed http
+
+        // 1. Force HTTPS
+        if (targetUrl.startsWith('http://')) {
             targetUrl = targetUrl.replace('http://', 'https://');
+        } else if (!targetUrl.startsWith('https://')) {
+            targetUrl = 'https://' + targetUrl;
         }
 
-        // Ensure standard endpoint path if only domain is given
+        // 2. Ensure Path
         if (!targetUrl.includes('/analysis/api/push-bulletin')) {
-            // Remove trailing slash if exists to append clean path
             targetUrl = targetUrl.replace(/\/+$/, "");
             targetUrl += '/analysis/api/push-bulletin/';
         }
 
         localStorage.setItem('aws_target_url', targetUrl);
 
-        const btn = evet;
-        const originalText = rHTML;
+        const btn = event.target;
+        const originalText = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gönderiliyor...';
 
