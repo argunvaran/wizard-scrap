@@ -54,12 +54,33 @@ class BilyonerScraper(BaseScraper):
                 "--headless=new" 
             ])
             
+            # PROXY CONFIGURATION 
+            # (Uncomment and fill this if you have a Residential Proxy)
+            # proxy_server = "http://user:pass@gateway.proxy-provider.com:port" 
+            # Or use a separate dictionary if auth is separate:
+            
+            # Example for simple IP auth or full URL:
+            proxy_conf = None
+            
+            # UNCOMMENT BELOW TO ENABLE PROXY
+            # proxy_conf = {
+            #     "server": "http://brd.superproxy.io:22225", # Example BrightData
+            #     "username": "brd-customer-hl_xyz-zone-static",
+            #     "password": "your_password"
+            # }
+            
             logger.debug(f"Launching browser with args: {args}")
 
-            self.browser = self.playwright.chromium.launch(
-                headless=False, # We manage headless via args for 'new' mode
-                args=args
-            )
+            launch_options = {
+                "headless": False, 
+                "args": args
+            }
+            
+            if proxy_conf:
+                logger.info(f"Using Proxy: {proxy_conf['server']}")
+                launch_options["proxy"] = proxy_conf
+
+            self.browser = self.playwright.chromium.launch(**launch_options)
             
             logger.debug("Browser launched successfully.")
             

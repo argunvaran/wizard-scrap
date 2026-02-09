@@ -3,6 +3,11 @@ from django.contrib.auth.decorators import login_required
 from data_manager.models import BilyonerBulletin
 from .engine import MatchAnalyzer
 from .advanced_engine import AdvancedMatchAnalyzer
+import requests
+import json
+from scraper.bilyoner import BilyonerScraper
+from django.http import JsonResponse
+from django.contrib.auth.decorators import user_passes_test
 
 @login_required
 def analysis_dashboard(request):
@@ -157,3 +162,50 @@ def receive_external_bulletin(request):
             return JsonResponse({"success": False, "error": str(e)}, status=500)
             
     return JsonResponse({"success": False, "error": "Method not allowed"}, status=405)
+
+@login_required
+def scrape_local_and_push_view(request):
+    """
+    Triggered from Local Dashboard (Superuser Only).
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Yetkisiz Erişim'})
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            target_url = data.get('target_url')
+            
+            if not target_url:
+                return JsonResponse({'success': False, 'error': 'Hedef AWS URL girilmedi.'})
+            
+            # 1. Scrape Locally
+            scraper = BilyonerScraper()
+            matches = scraper.scrape()
+            
+            if not matches:
+                return JsonResponse({'success': False, 'error': 'Bilyonerden veri çekilemedi (0 maç).'})
+                
+            # 2. Push to Remote
+            payload = {
+                "secret": "WFM_PRO_2026_SECURE_SYNC",
+                "matches": matches
+            }
+            
+            try:
+                resp = requests.post(target_url, json=payload, timeout=20)
+                if resp.status_code == 200:
+                    remote_res = resp.json()
+                    if remote_res.get('success'):
+                        return JsonResponse({'success': True, 'count': len(matches), 'msg': f"AWS Başarıyla Güncellendi: {remote_res.get('count')} Maç"})
+                    else:
+                        return JsonResponse({'success': False, 'error': f"AWS Hatası: {remote_res.get('error')}"})
+                else:
+                    return JsonResponse({'success': False, 'error': f"AWS HTTP Hatası: {resp.status_code}"})
+            except Exception as net_err:
+                return JsonResponse({'success': False, 'error': f"AWS Bağlantı Hatası: {str(net_err)}"})
+                
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f"İşlem Hatası: {str(e)}"})
+            
+    return JsonResponse({'success': False, 'error': 'Invalid Method'})
