@@ -34,6 +34,7 @@
                     <div class="d-grid gap-2">
                         <button onclick="runLocalScrape()" class="btn btn-outline-dark" {% if is_cloud %}disabled{%
                             endif %}>
+
                             <i class="bi bi-arrow-clockwise"></i> 1. Veriyi Çek (Görünür Mod)
                         </button>
 
@@ -67,6 +68,7 @@
                     <div class="d-grid gap-2">
                         <button onclick="runServerScrape()" class="btn btn-primary" {% if not is_cloud %}disabled{%
                             endif %}>
+
                             <i class="bi bi-cloud-download"></i> Direkt Sunucuda Çek
                         </button>
                     </div>
@@ -86,9 +88,7 @@
 <script>
     // --- LOCAL FUNCTIONS ---
     async function runLocalScrape() {
-        if (!confirm("Tarayıcı açılacak ve Bilyoner verileri LOKAL veritabanına çekilecek. Devam?")) return;
-
-        const btn = event.target;
+        if (!confirm("Tarayıcı açılacak ve Bilyoner verileri LOKAL veritabanına çekilecek. Devam?")) return   const btn = event.target;
         const originalText = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Çalışıyor...';
@@ -105,13 +105,32 @@
     }
 
     async function runAwsPush() {
-        let defaultUrl = localStorage.getItem('aws_target_url') || 'http://YOUR_AWS_IP/analysis/api/push-bulletin/';
-        const targetUrl = prompt("AWS Hedef URL:", defaultUrl);
+        // Default to HTTPS and the correct domain
+        let defaultUrl = localStorage.getItem('aws_target_url') || 'https://wfm-pro.com/analysis/api/push-bulletin/';
+        
+        let targetUrl = prompt("AWS Hedef URL (HTTPS zorunlu):", defaultUrl);
         if (!targetUrl) return;
+        
+        // Auto-fix URL formatting
+        targetUrl = targetUrl.trim();
+        if (!targetUrl.startsWith('http')) {
+            targetUrl = 'https://' + targetUrl;
+        } else if (targetUrl.startsWith('http://')) {
+            // Force Upgrade to HTTPS if they typed http
+            targetUrl = targetUrl.replace('http://', 'https://');
+        }
+        
+        // Ensure standard endpoint path if only domain is given
+        if (!targetUrl.includes('/analysis/api/push-bulletin')) {
+             // Remove trailing slash if exists to append clean path
+             targetUrl = targetUrl.replace(/\/+$/, "");
+             targetUrl += '/analysis/api/push-bulletin/';
+        }
+
         localStorage.setItem('aws_target_url', targetUrl);
 
         const btn = event.target;
-        const originalText = btn.innerHTML;
+        const originalText = rHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gönderiliyor...';
 
@@ -122,7 +141,9 @@
             } else {
                 alert(`❌ HATA: ${res.error}`);
             }
-        } catch (e) { alert("Bağlantı Hatası: " + e); }
+        } catch (e) { 
+            alert("Bağlantı Hatası: " + e + "\n\nLütfen URL'nin doğru olduğundan ve HTTPS kullandığınızdan emin olun."); 
+        }
         finally { btn.disabled = false; btn.innerHTML = originalText; }
     }
 
@@ -137,7 +158,7 @@
 
         try {
             // We reuse the scrape_local action effectively, but since we are ON the server, 
-            // the view logic handles it the same way (it runs the scraper class).
+     view logic handles it the same way (it runs the scraper class).
             // The only difference is environment.
             const res = await postData("{% url 'scrape_local_push' %}", { action: 'scrape_local' });
             if (res.success) {
@@ -158,4 +179,4 @@
         return response.json();
     }
 </script>
-{% endblock %}
+{% endblock content %}
