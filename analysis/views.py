@@ -165,12 +165,25 @@ def receive_external_bulletin(request):
 
 @login_required
 @login_required
+def sync_center_view(request):
+    """
+    Dedicated Page for Data Sync Operations.
+    Detects Environment:
+    - Local: 127.0.0.1, localhost
+    - Cloud: Everything else (e.g. wfm-pro.com, AWS IP)
+    """
+    host = request.get_host().split(':')[0]
+    is_cloud = host not in ['127.0.0.1', 'localhost']
+    
+    return render(request, 'analysis/sync.html', {
+        'is_cloud': is_cloud
+    })
+
+@login_required
 def scrape_local_and_push_view(request):
     """
-    Triggered from Local Dashboard (Superuser Only).
-    Handles:
-    1. action='scrape_local': Scrape Bilyoner -> Save to Local DB
-    2. action='push_to_aws': Read Local DB -> Push to Remote Server
+    Unified Endpoint for Scraping.
+    Auto-Detects Headless Mode based on Environment.
     """
     if not request.user.is_superuser:
         return JsonResponse({'success': False, 'error': 'Yetkisiz Erişim'})
@@ -178,19 +191,27 @@ def scrape_local_and_push_view(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            action = data.get('action', 'push_to_aws') # Default legacy behavior
+            action = data.get('action', 'push_to_aws') 
             target_url = data.get('target_url')
             
-            # --- ACTION 1: SCRAPE LOCAL ---
+            # Detect Environment
+            host = request.get_host().split(':')[0]
+            is_cloud = host not in ['127.0.0.1', 'localhost']
+
+            # --- ACTION 1: SCRAPE (Local or Server) ---
             if action == 'scrape_local':
-                scraper = BilyonerScraper()
-                # Use default scrape (headful locally per our update)
-                matches = scraper.scrape()
+                # If on SERVER (Cloud), force Headless (Invisible).
+                # If on LOCAL, force Headful (Visible) for debugging and anti-detection.
+                use_headless = True if is_cloud else False
                 
+                scraper = BilyonerScraper()
+                # Run scraper with detected mode
+                matches = scraper.scrape(headless=use_headless)
+
                 if not matches:
                     return JsonResponse({'success': False, 'error': 'Bilyonerden veri çekilemedi (0 maç).'})
                 
-                # Save to Local DB
+                # Save to DB (Local or Server DB, depending on where we are)
                 BilyonerBulletin.objects.all().delete()
                 bulk_list = []
                 for m in matches:
@@ -210,23 +231,21 @@ def scrape_local_and_push_view(request):
                     ))
                 BilyonerBulletin.objects.bulk_create(bulk_list)
                 
-                return JsonResponse({
-                    'success': True, 
-                    'count': len(matches), 
-                    'msg': f"Lokal veritabanı güncellendi: {len(matches)} Maç."
-                })
+                msg = "SUNUCU veritabanı güncellendi." if is_cloud else "LOKAL veritabanı güncellendi."
+                return JsonResponse({'success': True, 'count': len(matches), 'msg': msg})
 
-            # --- ACTION 2: PUSH TO AWS ---
+            # --- ACTION 2: PUSH TO AWS (Only makes sense from Local) ---
             elif action == 'push_to_aws':
+                if is_cloud:
+                     return JsonResponse({'success': False, 'error': 'Zaten sunucudasınız! Push işlemi sadece lokalden yapılır.'})
+
                 if not target_url:
                     return JsonResponse({'success': False, 'error': 'Hedef AWS URL girilmedi.'})
                 
-                # Read from Local DB
                 local_matches = BilyonerBulletin.objects.all()
                 if not local_matches.exists():
-                     return JsonResponse({'success': False, 'error': 'Lokal veritabanı boş! Önce "Bülteni Yenile" yapın.'})
+                     return JsonResponse({'success': False, 'error': 'Veritabanı boş!'})
 
-                # Serialize
                 matches_payload = []
                 for m in local_matches:
                     matches_payload.append({
@@ -244,10 +263,7 @@ def scrape_local_and_push_view(request):
                         'over_2_5': m.over_2_5,
                     })
 
-                payload = {
-                    "secret": "WFM_PRO_2026_SECURE_SYNC",
-                    "matches": matches_payload
-                }
+                payload = { "secret": "WFM_PRO_2026_SECURE_SYNC", "matches": matches_payload }
                 
                 try:
                     resp = requests.post(target_url, json=payload, timeout=20)

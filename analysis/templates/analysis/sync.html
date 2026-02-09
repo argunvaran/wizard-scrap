@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Veri Senkronizasyon Merkezi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold"><i class="bi bi-arrow-repeat"></i> Veri Senkronizasyon Merkezi</h2>
+            <p class="text-muted">
+                Şu Anki Ortam:
+                {% if is_cloud %}
+                <span class="badge bg-primary fs-6">☁️ AWS SUNUCUSU ({{ request.get_host }})</span>
+                {% else %}
+                <span class="badge bg-warning text-dark fs-6">💻 LOKAL BİLGİSAYAR ({{ request.get_host }})</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <!-- LOKAL OPERASYONLAR (Sadece Localhost'ta açık) -->
+        <div class="col-md-5 mb-4">
+            <div class="card h-100 border-warning {% if is_cloud %}bg-light opacity-50{% endif %}">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="bi bi-laptop"></i> LOKAL OPERASYON (PC'den Çek)
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Kendi bilgisayarınızdaki tarayıcıyı kullanarak Bilyoner'den veriyi çeker ve AWS'ye gönderir.
+                        <br><b>En güvenli yöntemdir (IP bloklanmaz).</b>
+                    </p>
+
+                    <div class="d-grid gap-2">
+                        <button onclick="runLocalScrape()" class="btn btn-outline-dark" {% if is_cloud %}disabled{%
+                            endif %}>
+                            <i class="bi bi-arrow-clockwise"></i> 1. Veriyi Çek (Görünür Mod)
+                        </button>
+
+                        <button onclick="runAwsPush()" class="btn btn-dark" {% if is_cloud %}disabled{% endif %}>
+                            <i class="bi bi-cloud-upload"></i> 2. AWS'ye Gönder
+                        </button>
+                    </div>
+
+                    {% if is_cloud %}
+                    <div class="alert alert-danger mt-3 small">
+                        <i class="bi bi-x-circle"></i> Bu işlemler sunucu üzerinde (AWS) yapılamaz. Lütfen kendi
+                        bilgisayarınızdan girin.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AWS OPERASYONLARI (Sadece Sunucuda açık) -->
+        <div class="col-md-5 mb-4">
+            <div class="card h-100 border-primary {% if not is_cloud %}bg-light opacity-50{% endif %}">
+                <div class="card-header bg-primary text-white fw-bold">
+                    <i class="bi bi-hdd-network"></i> BULUT OPERASYON (Sunucuda Çek)
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Doğrudan AWS sunucusu üzerinden Bilyoner'e bağlanır.
+                        <br><b>Dikkat:</b> Sunucu IP'si bloklanabilir veya 403 hatası alabilir.
+                    </p>
+
+                    <div class="d-grid gap-2">
+                        <button onclick="runServerScrape()" class="btn btn-primary" {% if not is_cloud %}disabled{%
+                            endif %}>
+                            <i class="bi bi-cloud-download"></i> Direkt Sunucuda Çek
+                        </button>
+                    </div>
+
+                    {% if not is_cloud %}
+                    <div class="alert alert-warning mt-3 small">
+                        <i class="bi bi-exclamation-triangle"></i> Bu işlemi sadece <b>wfm-pro.com</b> üzerinden
+                        yapabilirsiniz. Lokaldesiniz.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LOCAL FUNCTIONS ---
+    async function runLocalScrape() {
+        if (!confirm("Tarayıcı açılacak ve Bilyoner verileri LOKAL veritabanına çekilecek. Devam?")) return;
+
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Çalışıyor...';
+
+        try {
+            const res = await postData("{% url 'scrape_local_push' %}", { action: 'scrape_local' });
+            if (res.success) {
+                alert(`✅ BAŞARILI: ${res.msg}`);
+            } else {
+                alert(`❌ HATA: ${res.error}`);
+            }
+        } catch (e) { alert("Bağlantı Hatası: " + e); }
+        finally { btn.disabled = false; btn.innerHTML = originalText; }
+    }
+
+    async function runAwsPush() {
+        let defaultUrl = localStorage.getItem('aws_target_url') || 'http://YOUR_AWS_IP/analysis/api/push-bulletin/';
+        const targetUrl = prompt("AWS Hedef URL:", defaultUrl);
+        if (!targetUrl) return;
+        localStorage.setItem('aws_target_url', targetUrl);
+
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gönderiliyor...';
+
+        try {
+            const res = await postData("{% url 'scrape_local_push' %}", { action: 'push_to_aws', target_url: targetUrl });
+            if (res.success) {
+                alert(`✅ GÖNDERİLDİ: ${res.msg}`);
+            } else {
+                alert(`❌ HATA: ${res.error}`);
+            }
+        } catch (e) { alert("Bağlantı Hatası: " + e); }
+        finally { btn.disabled = false; btn.innerHTML = originalText; }
+    }
+
+    // --- SERVER FUNCTIONS ---
+    async function runServerScrape() {
+        if (!confirm("DİKKAT: AWS sunucusu üzerinden çekim denenecek. IP bloklanma riski vardır. Devam?")) return;
+
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sunucu Çekiyor...';
+
+        try {
+            // We reuse the scrape_local action effectively, but since we are ON the server, 
+            // the view logic handles it the same way (it runs the scraper class).
+            // The only difference is environment.
+            const res = await postData("{% url 'scrape_local_push' %}", { action: 'scrape_local' });
+            if (res.success) {
+                alert(`✅ SUNUCU GÜNCELLENDİ: ${res.msg}`);
+            } else {
+                alert(`❌ HATA (403/Blok olabilir): ${res.error}`);
+            }
+        } catch (e) { alert("Bağlantı Hatası: " + e); }
+        finally { btn.disabled = false; btn.innerHTML = originalText; }
+    }
+
+    async function postData(url, data) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    }
+</script>
+{% endblock %}

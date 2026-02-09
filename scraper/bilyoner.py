@@ -85,12 +85,12 @@ class BilyonerScraper(BaseScraper):
             self.page.set_default_timeout(60000)
             self.page.set_default_navigation_timeout(60000)
 
-    def scrape(self, custom_url=None):
+    def scrape(self, custom_url=None, headless=False):
         # Simplify URL to basics to avoid Query String encoding 400s
         target_url = "https://www.bilyoner.com/iddaa"
         # We will filter the data in Python instead of URL if URL fails
         
-        self.start_browser(headless=False) # Helper defaulting to visible mode for Local Stability
+        self.start_browser(headless=headless)
         
         try:
             # STEP 1: Warm-up (Visit Home Page First)

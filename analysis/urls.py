@@ -8,4 +8,5 @@ urlpatterns = [
     path('ask-ai/<str:unique_key>/', views.ask_gemini_analysis, name='ask_gemini_analysis'),
     path('api/push-bulletin/', views.receive_external_bulletin, name='push_bulletin'),
     path('scrape-local-push/', views.scrape_local_and_push_view, name='scrape_local_push'),
+    path('sync-center/', views.sync_center_view, name='sync_center'),
 ]

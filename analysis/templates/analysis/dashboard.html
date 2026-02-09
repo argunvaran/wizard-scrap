@@ -17,80 +17,16 @@
         <div class="card bg-light border-warning">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
-                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-tools text-primary"></i> Lokal Operasyon Paneli
-                    </h6>
-                    <small class="text-muted">Verileri önce lokale çek, sonra AWS sunucusuna gönder.</small>
+                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-tools text-primary"></i> Operasyon Paneli</h6>
+                    <small class="text-muted">Veri çekme ve senkronizasyon işlemleri.</small>
                 </div>
                 <div>
-                    <button onclick="triggerLocalScrape()" id="btnLocal" class="btn btn-warning btn-sm fw-bold me-2">
-                        <i class="bi bi-arrow-clockwise"></i> 1. Bülteni Yenile (Lokal)
-                    </button>
-                    <button onclick="triggerAwsPush()" id="btnAwsPush" class="btn btn-primary btn-sm fw-bold">
-                        <i class="bi bi-cloud-upload-fill"></i> 2. AWS'ye Gönder
-                    </button>
+                    <a href="{% url 'sync_center' %}" class="btn btn-outline-primary fw-bold">
+                        <i class="bi bi-arrow-repeat"></i> Senkronizasyon Merkezi'ne Git
+                    </a>
                 </div>
             </div>
         </div>
-        <script>
-            async function triggerLocalScrape() {
-                const btn = document.getElementById('btnLocal');
-                if (!confirm("Bilyoner sitesinden güncel veriler çekilip LOKAL veritabanına kaydedilecek. Devam edilsin mi?")) return;
-
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Çekiliyor...';
-
-                try {
-                    const response = await fetch("{% url 'scrape_local_push' %}", {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'scrape_local' }),
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-                    });
-                    const res = await response.json();
-                    if (res.success) {
-                        alert(`✅ ${res.msg}\nSayfa yenileniyor...`);
-                        location.reload();
-                    } else {
-                        alert(`❌ HATA: ${res.error}`);
-                    }
-                } catch (err) { alert("Hata: " + err); }
-                finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 1. Bülteni Yenile (Lokal)'; }
-            }
-
-            async function triggerAwsPush() {
-                const btn = document.getElementById('btnAwsPush');
-                let defaultUrl = localStorage.getItem('aws_target_url') || 'http://YOUR_AWS_IP/analysis/api/push-bulletin/';
-                const targetUrl = prompt("AWS Hedef URL (örn: wfm-pro.com):", defaultUrl);
-
-                if (!targetUrl) return;
-                localStorage.setItem('aws_target_url', targetUrl);
-
-                if (!confirm(`LOKAL veritabanındaki maçlar ${targetUrl} adresine gönderilecek. Onaylıyor musunuz?`)) return;
-
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Gönderiliyor...';
-
-                try {
-                    const response = await fetch("{% url 'scrape_local_push' %}", {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'push_to_aws', target_url: targetUrl }),
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }
-                    });
-
-                    const res = await response.json();
-
-                    if (res.success) {
-                        alert(`✅ BAŞARILI!\n\n${res.msg}`);
-                    } else {
-                        alert(`❌ HATA:\n\n${res.error}`);
-                    }
-                } catch (err) {
-                    alert(`❌ BAĞLANTI HATASI:\n\n${err}`);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-cloud-upload-fill"></i> 2. AWS\'ye Gönder';
-                }
-            }
-        </script>
     </div>
     {% endif %}
 
