@@ -9,8 +9,24 @@ from playwright.sync_api import sync_playwright
 import logging
 
 
+
+# Enhanced Logger Setup
 logger = logging.getLogger('scraper')
 logger.setLevel(logging.DEBUG)
+
+# File Handler (Persist logs)
+if not logger.handlers:
+    fh = logging.FileHandler('scraper_debug.log', mode='w')
+    fh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    # Console Handler (Immediate feedback)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 class BilyonerScraper(BaseScraper):
     def start_browser(self):
@@ -63,7 +79,13 @@ class BilyonerScraper(BaseScraper):
                 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
             """)
             
+            # Network Request Logging
+            def log_response(response):
+                if response.status >= 400:
+                    logger.warning(f"Request Failed: {response.url} Status: {response.status}")
+
             self.page = context.new_page()
+            self.page.on("response", log_response)
             
             # Default Timeouts
             self.page.set_default_timeout(60000)
@@ -130,10 +152,31 @@ class BilyonerScraper(BaseScraper):
             content = self.page.content()
             if "MS 1" not in content and "Oran" not in content:
                 title = self.page.title()
-                logger.error(f"CRITICAL: No betting content found! Page Title: {title}")
+                current_url = self.page.url
+                logger.error(f"CRITICAL: No betting content found! Page Title: {title} | URL: {current_url}")
+                
+                # DIAGNOSTICS: Save Artifacts
+                try:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    screenshot_path = f"debug_fail_{timestamp}.png"
+                    html_path = f"debug_fail_{timestamp}.html"
+                    
+                    self.page.screenshot(path=screenshot_path)
+                    logger.error(f"Saved Screenshot to: {os.path.abspath(screenshot_path)}")
+                    
+                    with open(html_path, "w", encoding="utf-8") as f:
+                        f.write(content)
+                    logger.error(f"Saved HTML Dump to: {os.path.abspath(html_path)}")
+                except Exception as artifact_err:
+                    logger.error(f"Failed to save debug artifacts: {artifact_err}")
+
                 # Log a snippet of body to see what *is* there (Login screen? access denied?)
-                body_text = self.page.inner_text("body")[:500].replace('\n', ' ')
-                logger.error(f"Page Preview: {body_text}...")
+                body_text = self.page.inner_text("body")[:1000].replace('\n', ' ')
+                logger.error(f"Page Preview (First 1000 chars): {body_text}...")
+                
+                if "Access Denied" in content or "Cloudflare" in title:
+                    logger.error("DETECTED: Cloudflare/WAF Block!")
+                
                 return []
             
             logger.info("Content verified (MS 1/Oran found). Starting extraction...")

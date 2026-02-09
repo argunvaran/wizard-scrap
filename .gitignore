@@ -26,3 +26,7 @@ playwright-report/
 
 # Logs
 *.log
+
+# Scraper Debug Artifacts
+debug_fail_*.png
+debug_fail_*.html

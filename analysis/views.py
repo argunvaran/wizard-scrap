@@ -109,8 +109,12 @@ def receive_external_bulletin(request):
     API Endpoint to receive matches from a local scraper (Hybrid Mode).
     Bypasses AWS IP blocks by allowing the user to scrape locally and push here.
     """
+    import logging
+    logger = logging.getLogger('api_receiver')
+    
     if request.method == 'POST':
         try:
+            logger.info(f"Received push request from {request.META.get('REMOTE_ADDR')}")
             data = json.loads(request.body)
             secret = data.get('secret')
             
